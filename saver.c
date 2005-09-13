@@ -608,40 +608,6 @@ static void save_node(FILE *f, ENode *node)
 	fprintf(f, "</%s>\n\n", node_el[e_ns_get_node_type(node)]);
 }
 
-static void save_dtd(FILE *f)
-{
-	fprintf(f,
-		"<!DOCTYPE vml [\n"
-		" <!ELEMENT vml (node*)>\n"
-		" <!ELEMENT node (tags?,\n"
-		"                position?, rotation?, scale?, links?,\n"
-		"                layers?\n"
-		" )>\n"
-		" <!ATTLIST node id CDATA #REQUIRED\n"
-		"                type (V_NT_OBJECT|V_NT_GEOMETRY|V_NT_BITMAP|V_NT_MATERIAL|V_NT_CURVE|V_NT_TEXT|V_NT_AUDIO) #REQUIRED\n"
-		"                name CDATA #REQUIRED>\n"
-		"\n"
-		" <!ELEMENT tags (taggroup*)>\n"
-		" <!ELEMENT taggroup (tag*)>\n"
-		" <!ATTLIST taggroup name ID #REQUIRED>\n"
-		"\n"
-		" <!ELEMENT tag (data)>\n"
-		" <!ATTLIST tag name ID #REQUIRED\n"
-		"               type (VN_TAG_BOOLEAN|VN_TAG_UINT32|VN_TAG_REAL64|VN_TAG_STRING|VN_TAG_REAL64_VEC3|VN_TAG_LINK|VN_TAG_ANIMATION|VN_TAG_BLOB) #REQUIRED>\n"
-		"\n"
-		" <!ELEMENT data (#PCDATA)>\n"
-		"\n"
-		" <!ELEMENT position (#PCDATA)>\n"
-		" <!ELEMENT rotation (#PCDATA)>\n"
-		" <!ELEMENT scale (#PCDATA)>\n"
-		" <!ELEMENT links (link+)\n"
-		" <!ELEMENT link (#EMPTY)>\n"
-		" <!ATTLIST link node CDATA #REQUIRED\n"
-		"                label CDATA #REQUIRED\n"
-		"                target CDATA 0>\n"
-		"]>\n\n");
-}
-
 static void save_data(FILE *f)
 {
 	ENode *node;
