@@ -1,0 +1,89 @@
+							2005-09-13
+							Emil Brink
+
+			About the VML Tools			
+
+1. INTRODUCTION
+This text briefly describes the "saver" and "loader" Verse clients.
+The purpose of these programs is to create and use disk files holding
+Verse content, in textual format. This format, called VML ("Verse
+Modelling Language"), is based on XML.
+
+The tools were written in parallel by two authors; the saver by Eskil
+Steenberg and the loader by Emil Brink. They are collected here since
+they are functionally very related, and one is not very useful without
+the other.
+
+
+2. LICENSING
+Licensing for these applications is like this: the loader code, since
+it depends on the GPL code from Purple, must be GPL too. The saver,
+which uses only the Enough and Verse libraries (both BSD) is BSD. The
+license texts are in COPYING.loader
+
+
+3. DEPENDENCIES
+This section talks about the dependencies for the two tools. They are
+widely different, owing to their different authors but also to the
+different functionality.
+
+Both tools naturally depend on Verse at the core; you will need to
+have the header ("verse.h") and library ("libverse.a" on Linux systems)
+in a location indicated by the VERSE variable in the Makefile.
+
+3.1 SAVER DEPENDENCIES
+The saver depends on the "Enough" Verse data storage library, which is
+also by Eskil. It is available in the "quelsolaar" CVS module, please
+look it up if you do not already have it. The Makefile will need to
+be edited to point to a location for the required header and library
+files.
+
+3.2 LOADER DEPENDENCIES
+The loader, on the other hand, depends on the general-purpose utility
+code developed for the "Purple" scripting environment. This is another
+Verse project, and is in the "purple" CVS module. Purple is here simply
+used as a source of fairly well-tested, basic utility code, to get up
+and running the actual client as quickly as possible.
+
+The following files are part of the Purple codebase:
+
+dynstr.[ch]	Dynamic (growable) strings.
+list.[ch]	Doubly linked list.
+log.[ch]	Basic error/warning logging.
+mem.[ch]	Memory allocation.
+memchunk.[ch]	Chunked memory allocation.
+strutil.[ch]	Various string utility functions.
+xmlnode.[ch]	Simple XML parser.
+
+If possible in your environment, it might be a good idea to check out
+the entire Purple module in a separate directory, and replace the above
+files with symbolic links into Purple. That way, you will only have one
+version of each of the shared files, and any updates (which are likely
+to happen to the Purple side first, perhaps exclusively) will not be
+missed. You can do this by editing the Makefile variable PURPLE to point
+at your local copy of the Purple code, and then doing "make purplelink"
+to replace the files with symbolic links to Purple.
+
+Building the loader is easy, as illustrated by the included Makefile.
+
+
+4. USAGE
+Once you have the tools built, using them is simple.
+
+4.1 USING THE SAVER
+The saver is typically called from a command line, like this:
+
+~> ./saver -1 -i 30 -f test.vml
+
+This will save the file only once and then exit (the "-1 option"), after
+first waiting 30 seconds for data to download (the "-i 30"). The file will
+be named "test.vml", as indicated by the "-f test.vml" option. There are
+other options, give it a "-h" option to display them.
+
+4.2 USING THE LOADER
+Here are the supported command line options for the loader program:
+
+-ip=HOST[:PORT]	Upload to the indicated Verse server.
+
+All other arguments are assumed to be filenames of VML files, which will
+be uploaded individually.
