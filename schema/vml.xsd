@@ -6,6 +6,17 @@
 
 <!-- First, define a bunch of custom types to shorten things later on. -->
 
+<!-- We can't use the "proper" xs:ID type for all our IDs, for instance for layers and
+     material fragments, since we must re-use them for each node. Just making them
+     arbitrary makes life needlessly hard for loaders. So, we define a simple "id" type
+     that is just a letter followed by digits, so it's still a valid xs:ID, which seems
+     like a good thing for some reason. -->
+<xs:simpleType name="id">
+ <xs:restriction base="xs:string">
+  <xs:pattern value="[a-z][0-9]+"/>
+ </xs:restriction>
+</xs:simpleType>
+
 <xs:simpleType name="paramtype">
  <xs:restriction base="xs:string">
   <xs:enumeration value="VN_O_METHOD_PTYPE_INT8"/>
@@ -32,6 +43,29 @@
   <xs:enumeration value="VN_O_METHOD_PTYPE_NODE"/>
   <xs:enumeration value="VN_O_METHOD_PTYPE_LAYER"/>
  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="int8-vec">
+ <xs:list itemType="xs:byte"/>
+</xs:simpleType>
+
+<xs:simpleType name="int16-vec">
+ <xs:list itemType="xs:short"/>
+</xs:simpleType>
+
+<xs:simpleType name="int24">
+ <xs:restriction base="xs:int">
+  <xs:minInclusive value="-8388608"/>
+  <xs:maxInclusive value="8388607"/>
+ </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="int24-vec">
+ <xs:list itemType="int24"/>
+</xs:simpleType>
+
+<xs:simpleType name="int32-vec">
+ <xs:list itemType="xs:int"/>
 </xs:simpleType>
 
 <xs:simpleType name="uint1">
@@ -222,10 +256,49 @@
  <xs:attribute name="pos" type="xs:double"/>
 </xs:complexType>
 
-<xs:attributeGroup name="node-attrs">
- <xs:attribute name="id" type="xs:ID" use="required"/>
- <xs:attribute name="name" type="xs:string"/>
-</xs:attributeGroup>
+<xs:complexType name="block-int8">
+ <xs:simpleContent>
+  <xs:extension base="int8-vec1024">
+   <xs:attribute name="index" type="xs:unsignedInt"/>
+  </xs:extension>
+ </xs:simpleContent>
+</xs:complexType>
+
+<xs:simpleType name="int8-vec1024">
+ <xs:restriction base="int8-vec">
+  <xs:length value="1024"/>
+ </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="int16-vec512">
+ <xs:restriction base="int16-vec">
+  <xs:length value="512"/>
+ </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="int24-vec384">
+ <xs:restriction base="int24-vec">
+  <xs:length value="384"/>
+ </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="int32-vec256">
+ <xs:restriction base="int32-vec">
+  <xs:length value="256"/>
+ </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="real32-vec256">
+ <xs:restriction base="real32-vec">
+  <xs:length value="256"/>
+ </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="real64-vec128">
+ <xs:restriction base="real64-vec">
+  <xs:length value="128"/>
+ </xs:restriction>
+</xs:simpleType>
 
 <!-- =========================================================================================== -->
 
@@ -293,7 +366,7 @@
         <xs:element name="tag-link">
          <xs:complexType>
           <xs:simpleContent>
-           <xs:extension base="xs:ID">
+           <xs:extension base="id">
            <xs:attribute name="name" type="xs:string" use="required"/>
            </xs:extension>
           </xs:simpleContent>
@@ -303,7 +376,7 @@
         <xs:element name="tag-animation">
          <xs:complexType>
           <xs:all>
-           <xs:element name="curve" type="xs:ID"/>
+           <xs:element name="curve" type="id"/>
            <xs:element name="start" type="xs:unsignedInt"/>
            <xs:element name="end"   type="xs:unsignedInt"/>
           </xs:all>
@@ -475,19 +548,23 @@
        </xs:choice>
       </xs:complexType>
      </xs:element>
+
      <xs:element name="vertexcrease" minOccurs="0">
      <xs:complexType>
       <xs:attribute name="layer"   type="xs:string"      use="required"/>
       <xs:attribute name="default" type="xs:unsignedInt" use="required"/>
      </xs:complexType>
     </xs:element>
+
     <xs:element name="edgecrease" minOccurs="0">
      <xs:complexType>
       <xs:attribute name="layer"   type="xs:string"/>
       <xs:attribute name="default" type="xs:unsignedInt"/>
      </xs:complexType>
     </xs:element>
+
     <xs:element name="bones" minOccurs="0">
+     <!-- FIXME: Bones support missing, here. -->
     </xs:element>
    </xs:sequence>
   </xs:extension>
@@ -607,7 +684,7 @@
          <xs:all>
           <xs:element name="color" type="real64-vec3"/>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -627,12 +704,12 @@
            </xs:simpleType>
           </xs:element>
           <xs:element name="normal_falloff" type="xs:double"/>
-          <xs:element name="brdf"   type="xs:IDREF"  minOccurs="0"/>
+          <xs:element name="brdf"   type="id"  minOccurs="0"/>
           <xs:element name="brdf_r" type="xs:string" minOccurs="0"/>
           <xs:element name="brdf_g" type="xs:string" minOccurs="0"/>
           <xs:element name="brdf_b" type="xs:string" minOccurs="0"/>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -641,7 +718,7 @@
          <xs:all>
           <xs:element name="normal_falloff" type="xs:double"/>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -651,7 +728,7 @@
           <xs:element name="normal_falloff" type="xs:double"/>
           <xs:element name="refraction_index" type="xs:double"/>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -662,20 +739,20 @@
           <xs:element name="layer_g" type="xs:string"/>
           <xs:element name="layer_b" type="xs:string"/>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
        <xs:element name="fragment-texture">
         <xs:complexType>
          <xs:all>
-          <xs:element name="bitmap"  type="xs:IDREF" minOccurs="0"/>
+          <xs:element name="bitmap"  type="id" minOccurs="0"/>
           <xs:element name="layer_r" type="xs:string"/>
           <xs:element name="layer_g" type="xs:string"/>
           <xs:element name="layer_b" type="xs:string"/>
-          <xs:element name="mapping" type="xs:IDREF"/>
+          <xs:element name="mapping" type="id"/>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -691,7 +768,7 @@
            </xs:simpleType>
           </xs:element>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -710,25 +787,25 @@
             </xs:restriction>
            </xs:simpleType>
           </xs:element>
-          <xs:element name="data_a"  type="xs:IDREF" minOccurs="0"/>
-          <xs:element name="data_b"  type="xs:IDREF" minOccurs="0"/>
-          <xs:element name="control" type="xs:IDREF" minOccurs="0"/>
+          <xs:element name="data_a"  type="id" minOccurs="0"/>
+          <xs:element name="data_b"  type="id" minOccurs="0"/>
+          <xs:element name="control" type="id" minOccurs="0"/>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
        <xs:element name="fragment-matrix">
         <xs:complexType>
          <xs:all>
-          <xs:element name="data" type="xs:IDREF" minOccurs="0"/>
+          <xs:element name="data" type="id" minOccurs="0"/>
           <xs:element name="matrix">
            <xs:simpleType>
             <xs:list itemType="xs:double"/>	<!-- FIXME: Should restrict length to 16 elements. -->
            </xs:simpleType>
           </xs:element>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -753,7 +830,7 @@
             </xs:restriction>
            </xs:simpleType>
           </xs:element>
-          <xs:element name="mapping" type="xs:IDREF" minOccurs="0"/>
+          <xs:element name="mapping" type="id" minOccurs="0"/>
           <xs:element name="ramp">
            <xs:complexType>
             <xs:sequence maxOccurs="unbounded">
@@ -770,7 +847,7 @@
            </xs:complexType>
           </xs:element>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -779,17 +856,17 @@
          <xs:all>
           <xs:element name="label" type="xs:string"/>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
        <xs:element name="fragment-alternative">
         <xs:complexType>
          <xs:all>
-          <xs:element name="alt_a" type="xs:IDREF" minOccurs="0"/>
-          <xs:element name="alt_b" type="xs:IDREF" minOccurs="0"/>
+          <xs:element name="alt_a" type="id" minOccurs="0"/>
+          <xs:element name="alt_b" type="id" minOccurs="0"/>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -797,10 +874,10 @@
         <xs:complexType>
          <xs:all>
           <xs:element name="label" type="xs:string"/>
-          <xs:element name="front" type="xs:IDREF" minOccurs="0"/>
-          <xs:element name="back"  type="xs:IDREF" minOccurs="0"/>
+          <xs:element name="front" type="id" minOccurs="0"/>
+          <xs:element name="back"  type="id" minOccurs="0"/>
          </xs:all>
-         <xs:attribute name="id" type="xs:ID" use="required"/>
+         <xs:attribute name="id" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
       </xs:choice>
@@ -823,7 +900,7 @@
          <xs:choice maxOccurs="unbounded">
           <xs:element name="key" type="key-1d"/>
          </xs:choice>
-         <xs:attribute name="name" type="xs:ID" use="required"/>
+         <xs:attribute name="name" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -832,7 +909,7 @@
          <xs:choice maxOccurs="unbounded">
           <xs:element name="key" type="key-2d"/>
          </xs:choice>
-         <xs:attribute name="name" type="xs:ID" use="required"/>
+         <xs:attribute name="name" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -841,7 +918,7 @@
          <xs:choice maxOccurs="unbounded">
           <xs:element name="key" type="key-3d"/>
          </xs:choice>
-         <xs:attribute name="name" type="xs:ID" use="required"/>
+         <xs:attribute name="name" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -850,7 +927,7 @@
          <xs:choice maxOccurs="unbounded">
           <xs:element name="key" type="key-4d"/>
          </xs:choice>
-         <xs:attribute name="name" type="xs:ID" use="required"/>
+         <xs:attribute name="name" type="id" use="required"/>
         </xs:complexType>
        </xs:element>
       </xs:choice>
@@ -883,6 +960,116 @@
  </xs:complexContent>
 </xs:complexType>
 
+<xs:complexType name="node-audio">
+ <xs:complexContent>
+  <xs:extension base="node">
+   <xs:sequence>
+    <xs:element name="buffers" minOccurs="0">
+     <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+
+       <xs:element name="buffer-int8">
+        <xs:complexType>
+         <xs:sequence>
+          <xs:element name="blocks">
+           <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+             <xs:element name="block" type="block-int8"/>
+            </xs:sequence>
+           </xs:complexType>
+          </xs:element>
+         </xs:sequence>
+         <xs:attribute name="name" type="xs:string" use="required"/>
+        </xs:complexType>
+       </xs:element>
+
+       <xs:element name="buffer-int16">
+        <xs:complexType>
+         <xs:sequence>
+          <xs:element name="blocks">
+           <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+             <xs:element name="block" type="int16-vec512"/>
+            </xs:sequence>
+           </xs:complexType>
+          </xs:element>
+         </xs:sequence>
+         <xs:attribute name="name" type="xs:string" use="required"/>
+        </xs:complexType>
+       </xs:element>
+
+       <xs:element name="buffer-int24">
+        <xs:complexType>
+         <xs:sequence>
+          <xs:element name="blocks">
+           <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+             <xs:element name="block" type="int24-vec384"/>
+            </xs:sequence>
+           </xs:complexType>
+          </xs:element>
+         </xs:sequence>
+         <xs:attribute name="name" type="xs:string" use="required"/>
+        </xs:complexType>
+       </xs:element>
+
+       <xs:element name="buffer-int32">
+        <xs:complexType>
+         <xs:sequence>
+          <xs:element name="blocks">
+           <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+             <xs:element name="block" type="int32-vec256"/>
+            </xs:sequence>
+           </xs:complexType>
+          </xs:element>
+         </xs:sequence>
+         <xs:attribute name="name" type="xs:string" use="required"/>
+        </xs:complexType>
+       </xs:element>
+
+       <xs:element name="buffer-real32">
+        <xs:complexType>
+         <xs:sequence>
+          <xs:element name="blocks">
+           <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+             <xs:element name="block" type="real32-vec256"/>
+            </xs:sequence>
+           </xs:complexType>
+          </xs:element>
+         </xs:sequence>
+         <xs:attribute name="name" type="xs:string" use="required"/>
+        </xs:complexType>
+       </xs:element>
+
+       <xs:element name="buffer-real64">
+        <xs:complexType>
+         <xs:sequence>
+          <xs:element name="blocks">
+           <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+             <xs:element name="block" type="real64-vec128"/>
+            </xs:sequence>
+           </xs:complexType>
+          </xs:element>
+         </xs:sequence>
+         <xs:attribute name="name" type="xs:string" use="required"/>
+        </xs:complexType>
+       </xs:element>
+
+      </xs:choice>
+     </xs:complexType>
+    </xs:element>
+
+    <xs:element name="streams" minOccurs="0">
+     <!-- FIXME: Missing support for streams, here. -->
+    </xs:element>
+   </xs:sequence>
+  </xs:extension>
+ </xs:complexContent>
+</xs:complexType>
+
 <!-- =========================================================================================== -->
 
 <!-- Actual top-level document structure definition. It's just a bunch of nodes. -->
@@ -896,7 +1083,7 @@
    <xs:element name="node-bitmap"   type="node-bitmap"/>
    <xs:element name="node-curve"    type="node-curve"/>
    <xs:element name="node-text"     type="node-text"/>
-   <!-- FIXME: Missing support for audio node, here. -->
+   <xs:element name="node-audio"    type="node-audio"/>	<!-- Partial support only. -->
   </xs:choice>
   <xs:attribute name="version" type="xs:string"/>
  </xs:complexType>
