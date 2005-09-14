@@ -367,7 +367,7 @@ static int process_common(MainInfo *min)
 				}
 				else if(strcmp(type, "uint32") == 0)
 				{
-					tag.vuint32 = child_get_uint32(list_data(iter), "value", 0);
+					tag.vuint32 = child_get_uint32(list_data(iter), "", 0);
 					verse_send_tag_create(min->node_id, id, ~0, name, VN_TAG_UINT32, &tag);
 				}
 				else if(strcmp(type, "string") == 0)
@@ -730,7 +730,7 @@ static int process_geometry(MainInfo *min)
 			fprintf(stderr, "loader: Unknown geometry layer \"%s\"\n", ln);
 			return 1;
 		}
-		printf("  ID of %s is %u\n", ln, layer_id_get(min, ln));
+		message(min, 3, "  ID of geometry layer %s is %u\n", ln, layer_id_get(min, ln));
 		lt = g_layer_type_from_string(xmlnode_get_name(here) + 6);
 		if(lt == (VNGLayerType) ~0)
 		{
