@@ -23,6 +23,7 @@
 typedef enum
 {
 	PEND_NONE = 0, PEND_CONNECT, PEND_NODE_CREATE, PEND_TAGGROUP_CREATE,
+	PEND_METHODGROUP_CREATE,
 	PEND_LAYER_CREATE, PEND_FRAGMENT_CREATE, PEND_CURVE_CREATE, PEND_BUFFER_CREATE
 } Pending;
 
@@ -510,7 +511,59 @@ static int process_object(MainInfo *min)
 	}
 	else if(strcmp(el, "methodgroups") == 0)
 	{
-		fprintf(stderr, "loader: Ignoring object method groups, not implemented\n");
+		List	*groups, *iter;
+
+		groups = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME("methodgroup"), XMLNODE_DONE);
+		for(iter = groups; iter != NULL; iter = list_next(iter))
+		{
+			const char	*mn = xmlnode_attrib_get_value(list_data(iter), "name");
+
+			message(min, 2, "Creating method group \"%s\" in object %u\n", mn, min->node_id);
+			verse_send_o_method_group_create(min->node_id, ~0, mn);
+			pend_add(min, PEND_METHODGROUP_CREATE, 1);
+		}
+		list_destroy(groups);
+		min->iter = xmlnode_iter_next(min->iter, NULL);
+	}
+	else if(strcmp(el, "methodgroup") == 0)
+	{
+		const char	*gn = xmlnode_attrib_get_value(here, "name");
+		uint16		gid;
+		List		*methods, *iter, *params, *piter;
+
+		gid = layer_id_get(min, gn);
+		if(gid == (uint16) ~0)
+		{
+			fprintf(stderr, "loader: Couldn't look up ID for method group \"%s\" -- creation failed?\n", gn);
+			min->iter = xmlnode_iter_next(min->iter, here);
+			return 0;
+		}
+		methods = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME("method"), XMLNODE_DONE);
+		for(iter = methods; iter != NULL; iter = list_next(iter))
+		{
+			const char	*mn = xmlnode_attrib_get_value(list_data(iter), "name");
+			uint8		pn, err;
+			const char	*pname[64];
+			VNOParamType	ptype[64];
+
+			params = xmlnode_nodeset_get(list_data(iter), XMLNODE_AXIS_CHILD, XMLNODE_NAME("param"), XMLNODE_DONE);
+			for(piter = params, pn = err = 0; piter != NULL; piter = list_next(piter))
+			{
+				pname[pn] = xmlnode_attrib_get_value(list_data(piter), "name");
+				ptype[pn] = o_method_param_type_from_string(xmlnode_attrib_get_value(list_data(piter), "type"));
+				if(pname[pn] != NULL && ptype[pn] != -1)
+					pn++;
+				else
+					err++;
+			}
+			list_destroy(params);
+			if(err == 0)
+			{
+				message(min, 3, "Creating method %u.%u, \"%s\" with %u params\n", min->node_id, gid, mn, pn);
+				verse_send_o_method_create(min->node_id, gid, ~0, mn, pn, ptype, pname);
+			}
+		}
+		list_destroy(methods);
 		min->iter = xmlnode_iter_next(min->iter, here);
 	}
 	else
@@ -1255,7 +1308,7 @@ static void step(MainInfo *min)
 		}
 		if(ok == 0)
 		{
-			fprintf(stderr, "loader: Unknown element found, skipping forward\n");
+			fprintf(stderr, "loader: Unknown element \"%s\" found, skipping forward\n", xmlnode_get_name(list_data(min->iter)));
 			min->iter = xmlnode_iter_next(min->iter, min->node);
 		}
 	}
@@ -1365,6 +1418,25 @@ static void cb_g_layer_create(void *user, VNodeID node_id, VLayerID layer_id, co
 		if(min->pending == PEND_LAYER_CREATE)
 		{
 			message(min, 5, "  and we're layer-create blocked, how interesting\n");
+			pend_sub(min);
+		}
+		else
+			message(min, 5, "unexpected, so no de-pend, but still stored\n");
+	}
+}
+
+static void cb_o_method_group_create(void *user, VNodeID node_id, uint16 group_id, const char *name)
+{
+	MainInfo	*min = user;
+
+	message(min, 4, "method group %u.%u (%s) created\n", node_id, group_id, name);
+	if(node_id == min->node_id)
+	{
+		message(min, 5, " that's in our current node\n");
+		layer_id_set(min, name, group_id);
+		if(min->pending == PEND_METHODGROUP_CREATE)
+		{
+			message(min, 5, "  and we're group-create blocked, how interesting\n");
 			pend_sub(min);
 		}
 		else
@@ -1544,14 +1616,15 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	verse_callback_set(verse_send_connect_accept,	cb_connect_accept,	&min);
-	verse_callback_set(verse_send_node_create,	cb_node_create,		&min);
-	verse_callback_set(verse_send_tag_group_create,	cb_tag_group_create,	&min);
-	verse_callback_set(verse_send_g_layer_create,	cb_g_layer_create,	&min);
-	verse_callback_set(verse_send_m_fragment_create, cb_m_fragment_create,	&min);
-	verse_callback_set(verse_send_b_layer_create,	cb_b_layer_create,	&min);
-	verse_callback_set(verse_send_c_curve_create,	cb_c_curve_create,	&min);
-	verse_callback_set(verse_send_t_buffer_create,	cb_t_buffer_create,	&min);
+	verse_callback_set(verse_send_connect_accept,		cb_connect_accept,		&min);
+	verse_callback_set(verse_send_node_create,		cb_node_create,			&min);
+	verse_callback_set(verse_send_tag_group_create,		cb_tag_group_create,		&min);
+	verse_callback_set(verse_send_o_method_group_create,	cb_o_method_group_create,	&min);
+	verse_callback_set(verse_send_g_layer_create,		cb_g_layer_create,		&min);
+	verse_callback_set(verse_send_m_fragment_create,	cb_m_fragment_create,		&min);
+	verse_callback_set(verse_send_b_layer_create,		cb_b_layer_create,		&min);
+	verse_callback_set(verse_send_c_curve_create,		cb_c_curve_create,		&min);
+	verse_callback_set(verse_send_t_buffer_create,		cb_t_buffer_create,		&min);
 
 	verse_send_connect("loader", "<secret>", server, NULL);
 
