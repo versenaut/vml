@@ -4,7 +4,35 @@
 
 <!-- =========================================================================================== -->
 
-<!-- Basic types used throughout. -->
+<!-- First, define a bunch of custom types to shorten things later on. -->
+
+<xs:simpleType name="paramtype">
+ <xs:restriction base="xs:string">
+  <xs:enumeration value="VN_O_METHOD_PTYPE_INT8"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_INT16"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_INT32"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_UINT8"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_UINT16"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_UINT32"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL32"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL64"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL32_VEC2"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL32_VEC3"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL32_VEC4"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL64_VEC2"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL64_VEC3"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL64_VEC4"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL32_MAT4"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL32_MAT9"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL32_MAT16"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL64_MAT4"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL64_MAT9"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_REAL64_MAT16"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_STRING"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_NODE"/>
+  <xs:enumeration value="VN_O_METHOD_PTYPE_LAYER"/>
+ </xs:restriction>
+</xs:simpleType>
 
 <xs:simpleType name="uint1">
  <xs:restriction base="xs:unsignedByte">
@@ -332,6 +360,33 @@
        </xs:complexType>
       </xs:element>
      </xs:choice>
+     </xs:complexType>
+    </xs:element>
+
+    <xs:element name="methodgroups" minOccurs="0">
+     <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+       <xs:element name="methodgroup">
+        <xs:complexType>
+         <xs:sequence>
+          <xs:element name="method" maxOccurs="unbounded">
+           <xs:complexType>
+            <xs:sequence>
+             <xs:element name="param" maxOccurs="unbounded">
+              <xs:complexType>
+               <xs:attribute name="name" type="xs:string" use="required"/>
+               <xs:attribute name="type" type="paramtype" use="required"/>
+              </xs:complexType>
+             </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+           </xs:complexType>
+          </xs:element>
+         </xs:sequence>
+         <xs:attribute name="name" type="xs:string"/>
+        </xs:complexType>
+       </xs:element>
+      </xs:choice>
      </xs:complexType>
     </xs:element>
    </xs:sequence>
