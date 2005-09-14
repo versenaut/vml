@@ -6,6 +6,7 @@
  * under the GPL license, see the COPYING.loader file for details.
 */
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -63,10 +64,24 @@ typedef struct
 
 	VNodeID		avatar;
 
-	uint32		tiles_sent;
+	int		log_level;
 } MainInfo;
 
 /* ----------------------------------------------------------------------------------------- */
+
+static void message(const MainInfo *min, int level, const char *fmt, ...)
+{
+	va_list	arg;
+
+	if(min->log_level < level)
+		return;
+	va_start(arg, fmt);
+	vprintf(fmt, arg);
+	va_end(arg);
+}
+
+/* ----------------------------------------------------------------------------------------- */
+
 
 static void dict_ctor(Dict *dict)
 {
@@ -127,7 +142,7 @@ static void layer_id_clear(MainInfo *min)
 static void layer_id_set(MainInfo *min, const char *name, VLayerID id)
 {
 	dict_set(&min->layer_ids, name, id);
-	printf("layer id for '%s' set to %u\n", name, id);
+	message(min, 3, "layer id for '%s' set to %u\n", name, id);
 }
 
 static VLayerID layer_id_get(const MainInfo *min, const char *name)
@@ -170,12 +185,12 @@ static void pend_add(MainInfo *min, Pending what, int counting)
 	min->pending = what;
 	if(counting)
 		min->pend_count++;
-/*	printf("pend_add(): count=%u\n", min->pend_count);*/
+	message(min, 4, "pend_add(): count=%u what=%d\n", min->pend_count, what);
 }
 
 static void pend_sub(MainInfo *min)
 {
-/*	printf("in pend_sub(): count=%u\n", min->pend_count);*/
+	message(min, 4, "in pend_sub(): count=%u\n", min->pend_count);
 	if(min->pend_count > 0)
 	{
 		if(--min->pend_count > 0)
@@ -320,13 +335,11 @@ static int process_common(MainInfo *min)
 		groups = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME("taggroup"), XMLNODE_DONE);
 		for(iter = groups; iter != NULL; iter = list_next(iter))
 		{
-			printf(" tag group '%s'\n", xmlnode_attrib_get_value(list_data(iter), "name"));
 			verse_send_tag_group_create(min->node_id, (uint16) ~0u, xmlnode_attrib_get_value(list_data(iter), "name"));
 			pend_add(min, PEND_TAGGROUP_CREATE, 1);
 		}
 		list_destroy(groups);
 		min->iter = xmlnode_iter_next(min->iter, NULL);
-		printf("tags handled, iter now '%s'\n", xmlnode_get_name(list_data(min->iter)));
 	}
 	else if(strcmp(el, "taggroup") == 0)
 	{
@@ -334,12 +347,10 @@ static int process_common(MainInfo *min)
 		uint32		id;
 
 		id = dict_get(&min->tag_groups, name);
-		printf("tag group \"%s\" is %u\n", name, id);
 		if(id != (uint32) ~0u)
 		{
 			List	*tags, *iter;
 
-			printf("tag group exists, let's set tags\n");
 			tags = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("tag-"), XMLNODE_DONE);
 			for(iter = tags; iter != NULL; iter = list_next(iter))
 			{
@@ -348,7 +359,6 @@ static int process_common(MainInfo *min)
 						*value = xmlnode_eval_single(list_data(iter), "");
 				VNTag		tag;
 
-				printf(" one tag is \"%s\", type \"%s\", value '%s'\n", name, type, value);
 				if(strcmp(type, "boolean") == 0)
 				{
 					tag.vboolean = (strcmp(value, "true") == 0) || (strcmp(value, "1") == 0);
@@ -369,14 +379,14 @@ static int process_common(MainInfo *min)
 					if(sscanf(value, "%lg", &tag.vreal64) == 1)
 						verse_send_tag_create(min->node_id, id, ~0, name, VN_TAG_REAL64, &tag);
 					else
-						printf("Parse error on real64 tag \"%s\" value\n", name);
+						fprintf(stderr, "loader: Parse error on real64 tag \"%s\" value\n", name);
 				}
 				else if(strcmp(type, "real64-vec3") == 0)
 				{
 					if(sscanf(value, "%lg %lg %lg", &tag.vreal64_vec3[0], &tag.vreal64_vec3[1], &tag.vreal64_vec3[2]) == 3)
 						verse_send_tag_create(min->node_id, id, ~0, name, VN_TAG_REAL64_VEC3, &tag);
 					else
-						printf("Parse error on real64_vec3 tag \"%s\" value\n", name);
+						fprintf(stderr, "loader: Parse error on real64_vec3 tag \"%s\" value\n", name);
 				}
 				else if(strcmp(type, "link") == 0)
 				{
@@ -407,17 +417,16 @@ static int process_common(MainInfo *min)
 					verse_send_tag_create(min->node_id, id, ~0, name, VN_TAG_BLOB, &tag);
 				}
 				else
-					printf("ignoring tag of type \"%s\" -- not implemented\n", type);
+					fprintf(stderr, "loader: Ignoring tag of type \"%s\" -- not implemented\n", type);
 			}
 			list_destroy(tags);
 			min->iter = xmlnode_iter_next(min->iter, here);	/* Skip entire group. */
 		}
 		else
-			printf("unknown tag group %u.\"%s\" -- still waiting for server response?\n", min->node_id, name);
+			fprintf(stderr, "loader: Unknown tag group %u.\"%s\" -- still waiting for server response?\n", min->node_id, name);
 	}
 	else if(strcmp(el, "tag") == 0)
 	{
-		printf(" skipping tag\n");
 		min->iter = xmlnode_iter_next(min->iter, NULL);
 		exit(0);
 	}
@@ -431,8 +440,6 @@ static int process_object(MainInfo *min)
 	const XmlNode	*here = list_data(min->iter);
 	const char	*el = xmlnode_get_name(here);
 	const char	*txt;
-
-	printf("in object, looking at %s for node %u\n", el, min->node_id);
 
 	if(strcmp(el, "transform") == 0)
 	{
@@ -503,7 +510,7 @@ static int process_object(MainInfo *min)
 	}
 	else if(strcmp(el, "methodgroups") == 0)
 	{
-		printf("ignoring object method groups, not implemented\n");
+		fprintf(stderr, "loader: Ignoring object method groups, not implemented\n");
 		min->iter = xmlnode_iter_next(min->iter, here);
 	}
 	else
@@ -521,7 +528,7 @@ static int g_scan_send_vertex_xyz(VNodeID node_id, VLayerID layer_id, const char
 		return 1;
 	}
 	else
-		fprintf(stderr, "Couldn't parse vertex from '%s'\n", element);
+		fprintf(stderr, "loader: Couldn't parse vertex from '%s'\n", element);
 	return 0;
 }
 
@@ -621,7 +628,6 @@ static void g_set_layer(VNodeID node_id, VLayerID layer_id, const XmlNode *layer
 	real64	tmp[4];
 	uint32	index = 0;
 
-	printf("about to set layer %u.%u\n", node_id, layer_id);
 	for(iter = points = xmlnode_nodeset_get(layer, XMLNODE_AXIS_CHILD, XMLNODE_NAME(elname), XMLNODE_DONE);
 	    iter != NULL; iter = list_next(iter))
 	{
@@ -631,7 +637,6 @@ static void g_set_layer(VNodeID node_id, VLayerID layer_id, const XmlNode *layer
 			index++;
 	}
 	list_destroy(points);
-	printf(" done, index=%u\n", index);
 }
 
 static int process_geometry(MainInfo *min)
@@ -639,27 +644,22 @@ static int process_geometry(MainInfo *min)
 	const XmlNode	*here = list_data(min->iter);
 	const char	*el = xmlnode_get_name(here);
 
-	printf("in geometry, looking at %s for node %u\n", el, min->node_id);
 	if(strcmp(el, "layers") == 0)
 	{
 		List	*layers, *iter;
 
-		printf("That's layers, so let's create them\n");
 		layers = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("layer-"), XMLNODE_DONE);
 		for(iter = layers; iter != NULL; iter = list_next(iter))
 		{
 			const char	*ln = xmlnode_attrib_get_value(list_data(iter), "name");
 			VNGLayerType	type = g_layer_type_from_string(xmlnode_get_name(list_data(iter)) + 6);
 
-			printf(" create '%s'\n", ln);
 			if(layer_id_get(min, ln) == (VLayerID) ~0u)
 			{
 				verse_send_g_layer_create(min->node_id, ~0, ln, type, 0, 0);
 				layer_id_set(min, ln, ~0);
 				pend_add(min, PEND_LAYER_CREATE, 1);
 			}
-			else
-				printf("  actually not, we already know this one\n");
 		}
 		list_destroy(layers);
 		min->iter = xmlnode_iter_next(min->iter, NULL);
@@ -670,19 +670,18 @@ static int process_geometry(MainInfo *min)
 		VLayerID	id;
 		VNGLayerType	lt;
 
-		printf(" that's layer, so set its contents... it should be around by now\n");
 		ln = xmlnode_attrib_get_value(here, "name");
 		id = layer_id_get(min, ln);
 		if(id == (VLayerID) ~0)
 		{
-			printf("Unexpected error, unknown layer '%s' (no ID)\n", ln);
+			fprintf(stderr, "loader: Unknown geometry layer \"%s\"\n", ln);
 			return 1;
 		}
 		printf("  ID of %s is %u\n", ln, layer_id_get(min, ln));
 		lt = g_layer_type_from_string(xmlnode_get_name(here) + 6);
 		if(lt == (VNGLayerType) ~0)
 		{
-			printf("Unexpected error; couldn't understand layer type\n");
+			fprintf(stderr, "loader: Unknown layer type \"%s\"\n", xmlnode_get_name(here) + 6);
 			return 1;
 		}
 		switch(lt)
@@ -722,7 +721,7 @@ static int process_geometry(MainInfo *min)
 		lname = xmlnode_attrib_get_value(here, "layer");
 		def   = attrib_get_uint32(here, "default", ~0u);
 		verse_send_g_crease_set_vertex(min->node_id, lname, def);
-		printf("vertex crease set to '%s' def=%u\n", lname, def);
+		message(min, 4, "vertex crease set to '%s' def=%u\n", lname, def);
 		min->iter = xmlnode_iter_next(min->iter, NULL);
 	}
 	else if(strcmp(el, "edgecrease") == 0)
@@ -733,12 +732,12 @@ static int process_geometry(MainInfo *min)
 		lname = xmlnode_attrib_get_value(here, "layer");
 		def   = attrib_get_uint32(here, "default", ~0u);
 		verse_send_g_crease_set_edge(min->node_id, lname, def);
-		printf("edge crease set to '%s'\n", lname);
+		message(min, 4, "edge crease set to '%s'\n", lname);
 		min->iter = xmlnode_iter_next(min->iter, NULL);
 	}
 	else if(strcmp(el, "bones") == 0)
 	{
-		printf("Bones skipped\n");
+		fprintf(stderr, "loader: Bones skipped, not implemented yet\n");
 		min->iter = xmlnode_iter_next(min->iter, here);
 	}
 	else
@@ -788,7 +787,7 @@ static void fragment_clear(VNMFragmentType type, VMatFrag *f)
 		f->output.front = f->output.back = (VNMFragmentID) ~0u;
 		break;
 	default:
-		printf("  not clearing fragment type %d\n", type);
+		;
 	}
 }
 
@@ -872,7 +871,7 @@ static int fragment_set(const MainInfo *min, VNMFragmentType type, VMatFrag *f, 
 					if(sscanf(txt, "%lg %lg %lg", &p->red, &p->green, &p->blue) == 3)
 						f->ramp.point_count++;
 					else
-						fprintf(stderr, "** Parse error in ramp element, expected three doubles\n");
+						fprintf(stderr, "loader: Parse error in ramp element, expected three doubles\n");
 				}
 			}
 		}
@@ -883,7 +882,7 @@ static int fragment_set(const MainInfo *min, VNMFragmentType type, VMatFrag *f, 
 		f->output.back  = fragment_map_get(min, child_get_ref(frag, "back", 'f', ~0u));
 		break;
 	default:
-		fprintf(stderr, "** Can't set type-%d fragment from XML\n", type);
+		fprintf(stderr, "loader: Can't set type-%d material fragment from XML\n", type);
 		return 0;
 	}
 	return 1;
@@ -896,12 +895,8 @@ static int m_create_fragment(MainInfo *min, VNMFragmentID id, const XmlNode *fra
 	VMatFrag	f;
 
 	if((type = m_fragment_type_from_string(xmlnode_get_name(frag) + 9)) == ~0u)
-	{
-		printf("got type %d\n", type);
 		return 0;
-	}
 	lid = attrib_get_ref(frag, "id", 'f', ~0u);
-	printf(" type %u has ID %u\n", type, id);
 	if(lid == ~0u)
 		return 0;
 	fragment_map_store(min, lid, id);
@@ -911,7 +906,7 @@ static int m_create_fragment(MainInfo *min, VNMFragmentID id, const XmlNode *fra
 		ok = fragment_set(min, type, &f, frag);
 	if(ok)
 	{
-		printf("creating material fragment, node %u, type %d\n", min->node_id, type);
+		message(min, 3, "creating material fragment, node %u, type %d\n", min->node_id, type);
 		verse_send_m_fragment_create(min->node_id, id, type, &f);
 	}
 	return 1;
@@ -922,12 +917,10 @@ static int process_material(MainInfo *min)
 	const XmlNode	*here = list_data(min->iter);
 	const char	*el = xmlnode_get_name(here);
 
-	printf("in material, looking at %s for node %u\n", el, min->node_id);
 	if(strcmp(el, "fragments") == 0)
 	{
 		List	*frags, *iter;
 
-		printf(" that's fragments, so let's create them\n");
 		frags = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("fragment-"), XMLNODE_DONE);
 		fragment_map_clear(min);
 		for(iter = frags; iter != NULL; iter = list_next(iter))
@@ -943,7 +936,6 @@ static int process_material(MainInfo *min)
 		uint32	id;
 
 		id = attrib_get_ref(here, "id", 'f', ~0u);
-		printf("it's a %s fragment, local ID is %u\n", el + 9, id);
 		if(id < min->fragment_map_size)
 			m_create_fragment(min, min->fragment_map[id], here);
 		min->iter = xmlnode_iter_next(min->iter, here);	/* Skip children. */
@@ -960,16 +952,14 @@ static int process_bitmap(MainInfo *min)
 
 	txt = xmlnode_eval_single(here, "");
 
-	printf("in bitmap, looking at %s for node %u\n", el, min->node_id);
 	if(strcmp(el, "dimensions") == 0)
 	{
 		uint16	w, h, d;
 
 		if(sscanf(txt, "%hu %hu %hu", &w, &h, &d) == 3)
 		{
-			printf(" got dimensions: %ux%ux%u\n", w, h, d);
+			message(min, 2, " got dimensions: %ux%ux%u\n", w, h, d);
 			verse_send_b_dimensions_set(min->node_id, w, h, d);
-			printf(" dimensions set\n");
 			min->iter = xmlnode_iter_next(min->iter, NULL);
 		}
 	}
@@ -977,7 +967,6 @@ static int process_bitmap(MainInfo *min)
 	{
 		List	*layers, *iter;
 
-		printf(" that's layers, so let's create them\n");
 		layers = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("layer-"), XMLNODE_DONE);
 		for(iter = layers; iter != NULL; iter = list_next(iter))
 		{
@@ -1020,7 +1009,7 @@ static int process_bitmap(MainInfo *min)
 				/* Inspect the type for each pixel. We can afford the overhead, and it saves code. */
 				if(lt == VN_B_LAYER_UINT1)
 				{
-					fprintf(stderr, "Can't parse 1-bpp pixel data\n");
+					fprintf(stderr, "loader: Can't parse 1-bpp pixel data\n");
 					break;
 				}
 				else if(lt == VN_B_LAYER_UINT8)
@@ -1036,15 +1025,12 @@ static int process_bitmap(MainInfo *min)
 					ts = eptr;
 				else
 				{
-					fprintf(stderr, "Parse error in tile (%u,%u,%u), pixel %u\n", x, y, z, i);
+					fprintf(stderr, "loader: Parse error in tile (%u,%u,%u), pixel %u\n", x, y, z, i);
 					break;
 				}
 			}
 			if(i == sizeof tile.vuint8 / sizeof *tile.vuint8)
-			{
 				verse_send_b_tile_set(min->node_id, lid, x, y, z, lt, &tile);
-				min->tiles_sent++;
-			}
 		}
 		list_destroy(tiles);
 		min->iter = xmlnode_iter_next(min->iter, here);
@@ -1063,7 +1049,6 @@ static int process_curve(MainInfo *min)
 	{
 		List	*curves, *iter;
 
-		printf(" that's curves, so let's create them\n");
 		curves = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("curve-"), XMLNODE_DONE);
 		for(iter = curves; iter != NULL; iter = list_next(iter))
 		{
@@ -1071,7 +1056,6 @@ static int process_curve(MainInfo *min)
 			unsigned int	cd;
 
 			cd = strtoul(xmlnode_get_name(list_data(iter)) + 6, NULL, 10);
-			printf(" dim=%u\n", cd);
 			verse_send_c_curve_create(min->node_id, (VLayerID) ~0u, cn, cd);
 			layer_id_set(min, cn, ~0);
 			pend_add(min, PEND_CURVE_CREATE, 1);
@@ -1088,7 +1072,6 @@ static int process_curve(MainInfo *min)
 		uint16		key_id = 0;
 
 		dim = strtoul(el + 6, NULL, 10);
-		printf("*** need to upload %u-dimensional curve data\n", dim);
 		keys = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME("key"), XMLNODE_DONE);
 		for(iter = keys; iter != NULL; iter = list_next(iter))
 		{
@@ -1147,7 +1130,7 @@ static int process_curve(MainInfo *min)
 			if(got == 5 * dim)
 				verse_send_c_key_set(min->node_id, cid, key_id++, dim, pre_val, pre_pos, value, pos, post_val, post_pos);
 			else
-				printf("Parse error in curve key, got %d values (expected %d)\n", got, 5 * dim);
+				fprintf(stderr, "loader: Parse error in curve key, got %d values (expected %d)\n", got, 5 * dim);
 		}
 		list_destroy(keys);
 		min->iter = xmlnode_iter_next(min->iter, here);
@@ -1166,7 +1149,7 @@ static int process_text(MainInfo *min)
 	{
 		const char	*lang = xmlnode_eval_single(here, "");
 
-		printf("text langauge: '%s'\n", lang);
+		message(min, 2, "text node langauge: '%s'\n", lang);
 		min->iter = xmlnode_iter_next(min->iter, NULL);
 	}
 	else if(strcmp(el, "buffers") == 0)
@@ -1220,20 +1203,20 @@ static void step(MainInfo *min)
 	{
 		min->node = here;
 		min->type = node_type_from_string(xmlnode_get_name(here) + 5);
-		printf("found node type %d at %p\n", min->type, min->node);
+		message(min, 3, "In step(), found node type %d at %p\n", min->type, min->node);
 		if(min->type == V_NT_OBJECT && min->skip_objects)
 		{
 			min->iter = xmlnode_iter_next(min->iter, here);
-			printf(" skipping object\n");
+			message(min, 3, " skipping object\n");
 			return;
 		}
 		else if(min->type != V_NT_OBJECT && !min->skip_objects)
 		{
-			printf("ignoring non-object node in non-skip mode\n");
+			message(min, 3, " ignoring non-object node in non-skip mode\n");
 			min->iter = xmlnode_iter_next(min->iter, here);
 			return;
 		}
-		printf(" sending create, local ID is %s\n", xmlnode_attrib_get_value(min->node, "id"));
+		message(min, 3, " sending create, local ID is %s\n", xmlnode_attrib_get_value(min->node, "id"));
 		min->iter = xmlnode_iter_next(min->iter, NULL);
 		verse_send_node_create(~0, min->type, 0);
 		pend_add(min, PEND_NODE_CREATE, 0);
@@ -1245,10 +1228,7 @@ static void step(MainInfo *min)
 		int	ok;
 
 		if(process_common(min))
-		{
-			printf(" common ate up the element, not doing body-processing\n");
 			return;
-		}
 		switch(min->type)
 		{
 		case V_NT_OBJECT:
@@ -1270,12 +1250,12 @@ static void step(MainInfo *min)
 			ok = process_text(min);
 			break;
 		default:
-			printf("Not processing node of type %d, code missing\n", min->type);
+			fprintf(stderr, "loader: Not processing node of type %d, code missing\n", min->type);
 			ok = 0;
 		}
 		if(ok == 0)
 		{
-			printf("================ unknown element found, skipping all\n");
+			fprintf(stderr, "loader: Unknown element found, skipping forward\n");
 			min->iter = xmlnode_iter_next(min->iter, min->node);
 		}
 	}
@@ -1285,13 +1265,13 @@ static void cb_t_buffer_create(void *user, VNodeID node_id, VLayerID buffer_id, 
 {
 	MainInfo	*min = user;
 
-	printf("text buffer %u.%u (%s) created\n", node_id, buffer_id, name);
+	message(min, 4, "text buffer %u.%u (%s) created\n", node_id, buffer_id, name);
 	if(node_id == min->node_id)
 	{
-		printf(" that's in our current node\n");
+		message(min, 5, " that's in our current node\n");
 		if(min->pending == PEND_BUFFER_CREATE)
 		{
-			printf("  and we're buffer-create blocked, how interesting\n");
+			message(min, 5, "  and we're buffer-create blocked, how interesting\n");
 			layer_id_set(min, name, buffer_id);
 			pend_sub(min);
 		}
@@ -1302,13 +1282,13 @@ static void cb_c_curve_create(void *user, VNodeID node_id, VLayerID curve_id, co
 {
 	MainInfo	*min = user;
 
-	printf("curve curve %u.%u (%s) created\n", node_id, curve_id, name);
+	message(min, 4, "curve curve %u.%u (%s) created\n", node_id, curve_id, name);
 	if(node_id == min->node_id)
 	{
-		printf(" that's in our current node\n");
+		message(min, 5, " that's in our current node\n");
 		if(min->pending == PEND_CURVE_CREATE)
 		{
-			printf("  and we're curve-create blocked, how interesting\n");
+			message(min, 5, "  and we're curve-create blocked, how interesting\n");
 			layer_id_set(min, name, curve_id);
 			pend_sub(min);
 		}
@@ -1319,13 +1299,13 @@ static void cb_b_layer_create(void *user, VNodeID node_id, VLayerID layer_id, co
 {
 	MainInfo	*min = user;
 
-	printf("bitmap layer %u.%u (%s) created\n", node_id, layer_id, name);
+	message(min, 4, "bitmap layer %u.%u (%s) created\n", node_id, layer_id, name);
 	if(node_id == min->node_id)
 	{
-		printf(" that's in our current node\n");
+		message(min, 5, " that's in our current node\n");
 		if(min->pending == PEND_LAYER_CREATE)
 		{
-			printf("  and we're layer-create blocked, how interesting\n");
+			message(min, 5, "  and we're layer-create blocked, how interesting\n");
 			layer_id_set(min, name, layer_id);
 			pend_sub(min);
 		}
@@ -1337,14 +1317,15 @@ static void cb_m_fragment_create(void *user, VNodeID node_id, VNMFragmentID frag
 {
 	MainInfo	*min = user;
 
-	printf("fragment %u created in node %u, type %d\n", fragment_id, node_id, type);
+	message(min, 4, "fragment %u created in node %u, type %d\n", fragment_id, node_id, type);
 	if(node_id == min->node_id)
 	{
-		printf(" that's in the current node\n");
+		message(min, 5, " that's in the current node\n");
 		if(min->pending == PEND_FRAGMENT_CREATE)
 		{
 			List	*frags, *iter;
 
+			message(min, 5, "  and we're fragment-create blocked, how interesting\n");
 			frags = xmlnode_nodeset_get(min->node, XMLNODE_AXIS_CHILD, XMLNODE_NAME("fragments"),
 						     XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("fragment-"), XMLNODE_DONE);
 			for(iter = frags; iter != NULL; iter = list_next(iter))
@@ -1357,10 +1338,8 @@ static void cb_m_fragment_create(void *user, VNodeID node_id, VNMFragmentID frag
 					uint32	id = attrib_get_ref(here, "id", 'f', ~0u);
 					if(id != ~0u)
 					{
-						printf(" local id is %u\n", id);
 						if(id < min->fragment_map_size && min->fragment_map[id] == (VNMFragmentID) ~0u)
 						{
-							printf("  storing remote ID %u\n", fragment_id);
 							fragment_map_store(min, id, fragment_id);
 							pend_sub(min);
 							break;
@@ -1378,39 +1357,37 @@ static void cb_g_layer_create(void *user, VNodeID node_id, VLayerID layer_id, co
 {
 	MainInfo	*min = user;
 
-	printf("geometry layer %u.%u (%s) created\n", node_id, layer_id, name);
+	message(min, 4, "geometry layer %u.%u (%s) created\n", node_id, layer_id, name);
 	if(node_id == min->node_id)
 	{
-		printf(" that's in our current node\n");
+		message(min, 5, " that's in our current node\n");
 		layer_id_set(min, name, layer_id);	/* Always store, even if not expected (server sends vertex/poly spontaneously). */
 		if(min->pending == PEND_LAYER_CREATE)
 		{
-			printf("  and we're layer-create blocked, how interesting\n");
+			message(min, 5, "  and we're layer-create blocked, how interesting\n");
 			pend_sub(min);
 		}
 		else
-			printf("unexpected, so no de-pend, but still stored\n");
+			message(min, 5, "unexpected, so no de-pend, but still stored\n");
 	}
-	else
-		printf("ignoring, bad node\n");
 }
 
 static void cb_tag_group_create(void *user, VNodeID node_id, uint16 group_id, const char *name)
 {
 	MainInfo	*min = user;
 
-	printf("there's a tag group %u.%u called \"%s\"\n", node_id, group_id, name);
+	message(min, 4, "there's a tag group %u.%u called \"%s\"\n", node_id, group_id, name);
 	if(node_id == min->node_id)
 	{
-		printf(" that's in our current node\n");
+		message(min, 5, " that's in our current node\n");
 		if(min->pending == PEND_TAGGROUP_CREATE)
 		{
-			printf("  and we're tag group-create blocked, how interesting\n");
+			message(min, 5, "  and we're tag group-create blocked, how interesting\n");
 			dict_set(&min->tag_groups, name, group_id);
 			pend_sub(min);
 		}
 		else
-			printf("Unexpected tag group creation received (%u.%u \"%s\")\n", node_id, group_id, name);
+			message(min, 5, "Unexpected tag group creation received (%u.%u \"%s\")\n", node_id, group_id, name);
 	}
 }
 
@@ -1422,7 +1399,7 @@ static void cb_node_create(void *user, VNodeID node_id, VNodeType type, VNodeOwn
 		return;
 	if(owner != VN_OWNER_MINE)
 		return;
-	printf("there's a node called %u of type %d\n", node_id, type);
+	message(min, 2, "There's a node called %u of type %d\n", node_id, type);
 	if(min->pending == PEND_NODE_CREATE && type == min->type)
 	{
 		VNodeID	local;
@@ -1431,23 +1408,21 @@ static void cb_node_create(void *user, VNodeID node_id, VNodeType type, VNodeOwn
 		local = attrib_get_ref(min->node, "id", 'n', ~0);
 		if(local == ~0)
 		{
-			printf("Failed to read ID attrib\n");
+			fprintf(stderr, "loader: Failed to read ID attrib\n");
 			return;
 		}
-		printf("that means node '%s' got created\n", xmlnode_attrib_get_value(min->node, "id"));
+		message(min, 2, "that means node '%s' got created\n", xmlnode_attrib_get_value(min->node, "id"));
 		node_map_set(min, local, node_id);
 		min->node_id = node_id;
 		min->pending = PEND_NONE;
-		printf("sending node_subscribe, node %u\n", node_id);
+		message(min, 3, "sending node_subscribe, node %u\n", node_id);
 		verse_send_node_subscribe(node_id);
 		if((name = xmlnode_attrib_get_value(min->node, "name")) != NULL)
 		{
 			verse_send_node_name_set(node_id, name);
-			printf(" name set, it's \"%s\"\n", name);
+			message(min, 2, "Name set, node %u is \"%s\"\n", node_id, name);
 		}
 	}
-	else
-		printf("NOT the expected (pending) type %u, that's weird\n", min->type);
 }
 
 static int type_to_position(const char *type)
@@ -1481,19 +1456,18 @@ static List * file_begin(MainInfo *min)
 	list = xmlnode_nodeset_get(list_data(min->files), XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("node"), XMLNODE_DONE);
 	for(iter = list; iter != NULL; iter = list_next(iter))
 	{
-		printf("here's a \"%s\"\n", xmlnode_get_name(list_data(iter)));
 		sorted = list_insert_sorted(sorted, list_data(iter), cmp_node);
 	}
 	return sorted;
 }
 
-static void cb_connect_accept(void *user, VNodeID avatar, const char *address)
+static void cb_connect_accept(void *user, VNodeID avatar, const char *address, const uint8 *host_id)
 {
 	MainInfo	*min = user;
 	List		*sorted, *iter;
 
 	min->avatar = avatar;
-	printf("Connected as %u\n", avatar);
+	message(min, 1, "Connected as %u to %s\n", avatar, address);
 	verse_send_node_index_subscribe(~0);
 
 	/* Sort the nodes in a good access-order, then flatten them and concatenate the resulting element-lists. */
@@ -1541,10 +1515,16 @@ int main(int argc, char *argv[])
 	list_init();
 
 	min.files = NULL;
+	min.log_level = 0;
+
 	for(i = 1; argv[i] != NULL; i++)
 	{
 		if(strncmp(argv[i], "-ip=", 4) == 0)
 			server = argv[i] + 4;
+		else if(strcmp(argv[i], "-v") == 0)
+			min.log_level++;
+		else if(strcmp(argv[i], "-q") == 0)
+			min.log_level--;
 		else if(argv[i][0] != '-')
 		{
 			n = load(argv[i]);
@@ -1553,29 +1533,24 @@ int main(int argc, char *argv[])
 				min.files = list_append(min.files, n);
 			}
 			else
-				printf("Couldn't load \"%s\"\n", argv[i]);
+				fprintf(stderr, "loader: Couldn't load VML from \"%s\"\n", argv[i]);
 		}
 	}
-	printf("Loaded %u VML files, about to connect\n", list_length(min.files));
+	message(&min, 0, "Loaded %u VML files, about to connect\n", list_length(min.files));
 
 	if(min.files == NULL)
 	{
-		printf("No VML files loaded, aborting\n");
+		fprintf(stderr, "loader: No VML files loaded, aborting\n");
 		return EXIT_FAILURE;
 	}
 
 	verse_callback_set(verse_send_connect_accept,	cb_connect_accept,	&min);
 	verse_callback_set(verse_send_node_create,	cb_node_create,		&min);
 	verse_callback_set(verse_send_tag_group_create,	cb_tag_group_create,	&min);
-
 	verse_callback_set(verse_send_g_layer_create,	cb_g_layer_create,	&min);
-
 	verse_callback_set(verse_send_m_fragment_create, cb_m_fragment_create,	&min);
-
 	verse_callback_set(verse_send_b_layer_create,	cb_b_layer_create,	&min);
-
 	verse_callback_set(verse_send_c_curve_create,	cb_c_curve_create,	&min);
-
 	verse_callback_set(verse_send_t_buffer_create,	cb_t_buffer_create,	&min);
 
 	verse_send_connect("loader", "<secret>", server, NULL);
@@ -1591,7 +1566,6 @@ int main(int argc, char *argv[])
 	min.fragment_map_size = 0u;
 	dict_ctor(&min.tag_groups);
 	dict_ctor(&min.layer_ids);
-	min.tiles_sent = 0;
 
 	/* Wait for connect to happen, otherwise min.iter is NULL and below loop exits too soon. */
 	while(min.avatar == ~0u)
@@ -1601,12 +1575,12 @@ int main(int argc, char *argv[])
 	min.skip_objects = 1;
 	last_pend = -1;
 	last_count = -1;
+	message(&min, 1, "About to upload non-object nodes\n2");
 	while(min.iter != NULL)
 	{
 		verse_callback_update(10000);
 		if(min.pending != last_pend || min.pend_count != last_count)
 		{
-			printf("uploader, pend=%d for %u\n", min.pending, min.pend_count);
 			last_pend = min.pending;
 			last_count = min.pend_count;
 		}
@@ -1615,7 +1589,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Then iterate again, now over objects only. */
-	printf("Done, this would be a good time to upload the object nodes\n");
+	message(&min, 1, "Done, this would be a good time to upload the object nodes\n");
 	min.skip_objects = 0;
 	min.iter = min.file_nodes;
 	while(min.iter != NULL)
@@ -1628,8 +1602,7 @@ int main(int argc, char *argv[])
 		verse_callback_update(10000);
 
 	verse_send_connect_terminate("localhost", "All done, exiting");
-
-	printf("Loader done, sent %u bitmap tiles total (all layers, all nodes)\n", min.tiles_sent);
+	message(&min, 2, "All done, exiting\n");
 
 	return EXIT_SUCCESS;
 }
