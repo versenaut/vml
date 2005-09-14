@@ -43,6 +43,21 @@ VNodeType node_type_from_string(const char *str)
 	return lookup(map, sizeof map / sizeof *map, str);
 }
 
+VNOParamType o_method_param_type_from_string(const char *str)
+{
+#define	PT(n)	{ "VN_O_METHOD_PTYPE_" #n, VN_O_METHOD_PTYPE_##n }
+	const Entry map[] = {
+		PT(INT8), PT(INT16), PT(INT32), PT(UINT8), PT(UINT16), PT(UINT32),
+		PT(REAL32), PT(REAL64), PT(REAL32_VEC2), PT(REAL32_VEC3), PT(REAL32_VEC4),
+		   PT(REAL64_VEC2), PT(REAL64_VEC3), PT(REAL64_VEC4),
+		   PT(REAL32_MAT4), PT(REAL32_MAT9), PT(REAL32_MAT16),
+		   PT(REAL64_MAT4), PT(REAL64_MAT9), PT(REAL64_MAT16),
+		   PT(STRING), PT(NODE), PT(LAYER)
+	};
+	return lookup(map, sizeof map / sizeof *map, str);
+#undef	PT
+}
+
 VNGLayerType g_layer_type_from_string(const char *str)
 {
 #define LT(n,t)	{ n, VN_G_LAYER_##t }
