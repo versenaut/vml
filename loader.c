@@ -1507,7 +1507,7 @@ XmlNode * load(const char *filename)
 
 int main(int argc, char *argv[])
 {
-	int		i, last_pend, last_count;
+	int		i, j, last_pend, last_count;
 	XmlNode		*n;
 	MainInfo	min;
 	const char	*server = "localhost";
@@ -1521,10 +1521,10 @@ int main(int argc, char *argv[])
 	{
 		if(strncmp(argv[i], "-ip=", 4) == 0)
 			server = argv[i] + 4;
-		else if(strcmp(argv[i], "-v") == 0)
-			min.log_level++;
-		else if(strcmp(argv[i], "-q") == 0)
-			min.log_level--;
+		else if(strncmp(argv[i], "-v", 2) == 0)
+			for(j = 1; argv[i][j] == 'v'; j++, min.log_level++);
+		else if(strncmp(argv[i], "-q", 2) == 0)
+			for(j = 1; argv[i][j] == 'q'; j++, min.log_level--);
 		else if(argv[i][0] != '-')
 		{
 			n = load(argv[i]);
