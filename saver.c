@@ -460,9 +460,26 @@ static void save_text(FILE *f, ENode *t_node)
 	fprintf(f, "\t<buffers>\n");
 	for(buffer = e_nst_get_buffer_next(t_node, 0); buffer != NULL; buffer = e_nst_get_buffer_next(t_node, e_nst_get_buffer_id(buffer) + 1))
 	{
-		fprintf(f, "\t<buffer>\n");
-		fprintf(f, "%s", e_nst_get_buffer_data(t_node, buffer));
-		fprintf(f, "\t</buffer>\n");
+		const char	*text = e_nst_get_buffer_data(t_node, buffer), *eptr, *p;
+		size_t		len = e_nst_get_buffer_data_length(t_node, buffer);
+
+		fprintf(f, "\t<buffer name=\"%s\">\n<![CDATA[", e_nst_get_buffer_name(buffer));
+		/* Go through the text and escape any occurance of "]]>" into "]]&gt;". Leave the rest as-is, in CDATA cozyness. */
+		for(eptr = text + len; text < eptr;)
+		{
+			if((p = strstr(text, "]]>")) != NULL)
+			{
+				fwrite(text, p - text, 1, f);
+				fprintf(f, "]]&gt;");
+				text = p + 3;
+			}
+			else
+			{
+				fwrite(text, len, 1, f);
+				text += len;
+			}
+		}
+		fprintf(f, "]]>\t</buffer>\n");
 	}
 	fprintf(f, "\t</buffers>\n");
 }
