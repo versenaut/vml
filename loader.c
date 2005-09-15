@@ -1193,6 +1193,154 @@ static int process_curve(MainInfo *min)
 	return 1;
 }
 
+static int a_parse_int8(VNABlock *block, const char *data)
+{
+	char	*eptr;
+	size_t	i;
+
+	for(i = 0; i < VN_A_BLOCK_SIZE_INT8; i++)
+	{
+		block->vint8[i] = strtol(data, &eptr, 10);
+		if(eptr == data)
+			return 0;
+	}
+	return 1;
+}
+
+static int a_parse_int16(VNABlock *block, const char *data)
+{
+	char	*eptr;
+	size_t	i;
+
+	for(i = 0; i < VN_A_BLOCK_SIZE_INT8; i++)
+	{
+		block->vint16[i] = strtol(data, &eptr, 10);
+		if(eptr == data)
+			return 0;
+	}
+	return 1;
+}
+
+static int a_parse_int24(VNABlock *block, const char *data)
+{
+	char	*eptr;
+	size_t	i;
+
+	for(i = 0; i < VN_A_BLOCK_SIZE_INT8; i++)
+	{
+		block->vint24[i] = strtol(data, &eptr, 10);
+		if(eptr == data)
+			return 0;
+	}
+	return 1;
+}
+
+static int a_parse_int32(VNABlock *block, const char *data)
+{
+	char	*eptr;
+	size_t	i;
+
+	for(i = 0; i < VN_A_BLOCK_SIZE_INT8; i++)
+	{
+		block->vint32[i] = strtol(data, &eptr, 10);
+		if(eptr == data)
+			return 0;
+	}
+	return 1;
+}
+
+static int a_parse_real32(VNABlock *block, const char *data)
+{
+	char	*eptr;
+	size_t	i;
+
+	for(i = 0; i < VN_A_BLOCK_SIZE_INT8; i++)
+	{
+		block->vreal32[i] = strtod(data, &eptr);
+		if(eptr == data)
+			return 0;
+	}
+	return 1;
+}
+
+static int a_parse_real64(VNABlock *block, const char *data)
+{
+	char	*eptr;
+	size_t	i;
+
+	for(i = 0; i < VN_A_BLOCK_SIZE_INT8; i++)
+	{
+		block->vreal64[i] = strtod(data, &eptr);
+		if(eptr == data)
+			return 0;
+	}
+	return 1;
+}
+
+static int process_audio(MainInfo *min)
+{
+	const XmlNode	*here = list_data(min->iter);
+	const char	*el = xmlnode_get_name(here);
+
+	if(strcmp(el, "buffers") == 0)
+	{
+		List	*buffers, *iter;
+
+		buffers = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("buffer-"), XMLNODE_DONE);
+		for(iter = buffers; iter != NULL; iter = list_next(iter))
+		{
+			const char	*bn = xmlnode_attrib_get_value(list_data(iter), "name");
+			VNABlockType	bt = a_block_type_from_string(xmlnode_get_name(list_data(iter)) + 7);
+			real64		freq = strtod(xmlnode_attrib_get_value(list_data(iter), "frequency"), NULL);
+
+			message(min, 2, "there's an audio buffer called \"%s\", type %d, freq %g Hz\n", bn, bt, freq);
+			verse_send_a_buffer_create(min->node_id, (VLayerID) ~0u, bn, bt, freq);
+			layer_id_set(min, bn, ~0);
+			pend_add(min, PEND_BUFFER_CREATE, 1);
+		}
+		list_destroy(buffers);
+		min->iter = xmlnode_iter_next(min->iter, NULL);
+	}
+	else if(strncmp(el, "buffer-", 7) == 0)
+	{
+		const char	*bn;
+		VNABlockType	bt;
+		VLayerID	id;
+		List		*blocks, *iter;
+		uint32		index;
+		VNABlock	block;
+		int		(*parser[])(VNABlock *block, const char *data) = { a_parse_int8, a_parse_int16, a_parse_int24, a_parse_int32, a_parse_real32, a_parse_real64 };
+
+		bn = xmlnode_attrib_get_value(here, "name");
+		bt = a_block_type_from_string(el + 7);
+		if(bn == NULL || bt < 0)
+		{
+			fprintf(stderr, "loader: Error in audio buffer block parsing\n");
+			return 0;
+		}
+		id = layer_id_get(min, bn);
+		blocks = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME("blocks"), XMLNODE_AXIS_CHILD, XMLNODE_NAME("block"), XMLNODE_DONE);
+		for(iter = blocks; iter != NULL; iter = list_next(iter))
+		{
+			index = attrib_get_uint32(list_data(iter), "index", ~0);
+			if(index == ~0)
+				continue;
+			if(parser[bt](&block, xmlnode_eval_single(list_data(iter), "")))
+			{
+				message(min, 3, " sending audio block %u.%u.%u\n", min->node_id, id, index);
+				verse_send_a_block_set(min->node_id, id, index, bt, &block);
+			}
+			else
+				break;
+		}
+		list_destroy(blocks);
+		min->iter = xmlnode_iter_next(min->iter, here);
+	}
+	else
+		return 0;
+	return 1;
+}
+
 static int process_text(MainInfo *min)
 {
 	const XmlNode	*here = list_data(min->iter);
@@ -1302,6 +1450,9 @@ static void step(MainInfo *min)
 		case V_NT_TEXT:
 			ok = process_text(min);
 			break;
+		case V_NT_AUDIO:
+			ok = process_audio(min);
+			break;
 		default:
 			fprintf(stderr, "loader: Not processing node of type %d, code missing\n", min->type);
 			ok = 0;
@@ -1310,6 +1461,23 @@ static void step(MainInfo *min)
 		{
 			fprintf(stderr, "loader: Unknown element \"%s\" found, skipping forward\n", xmlnode_get_name(list_data(min->iter)));
 			min->iter = xmlnode_iter_next(min->iter, min->node);
+		}
+	}
+}
+
+static void cb_a_buffer_create(void *user, VNodeID node_id, VLayerID buffer_id, const char *name)
+{
+	MainInfo	*min = user;
+
+	message(min, 4, "audio buffer %u.%u (%s) created\n", node_id, buffer_id, name);
+	if(node_id == min->node_id)
+	{
+		message(min, 5, " that's in our current node\n");
+		if(min->pending == PEND_BUFFER_CREATE)
+		{
+			message(min, 5, "  and we're buffer-create blocked, how interesting\n");
+			layer_id_set(min, name, buffer_id);
+			pend_sub(min);
 		}
 	}
 }
@@ -1625,6 +1793,7 @@ int main(int argc, char *argv[])
 	verse_callback_set(verse_send_b_layer_create,		cb_b_layer_create,		&min);
 	verse_callback_set(verse_send_c_curve_create,		cb_c_curve_create,		&min);
 	verse_callback_set(verse_send_t_buffer_create,		cb_t_buffer_create,		&min);
+	verse_callback_set(verse_send_a_buffer_create,		cb_a_buffer_create,		&min);
 
 	verse_send_connect("loader", "<secret>", server, NULL);
 
