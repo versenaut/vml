@@ -980,6 +980,7 @@
           </xs:element>
          </xs:sequence>
          <xs:attribute name="name" type="xs:string" use="required"/>
+         <xs:attribute name="frequency" type="xs:double" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -995,6 +996,7 @@
           </xs:element>
          </xs:sequence>
          <xs:attribute name="name" type="xs:string" use="required"/>
+         <xs:attribute name="frequency" type="xs:double" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -1010,6 +1012,7 @@
           </xs:element>
          </xs:sequence>
          <xs:attribute name="name" type="xs:string" use="required"/>
+         <xs:attribute name="frequency" type="xs:double" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -1025,6 +1028,7 @@
           </xs:element>
          </xs:sequence>
          <xs:attribute name="name" type="xs:string" use="required"/>
+         <xs:attribute name="frequency" type="xs:double" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -1040,6 +1044,7 @@
           </xs:element>
          </xs:sequence>
          <xs:attribute name="name" type="xs:string" use="required"/>
+         <xs:attribute name="frequency" type="xs:double" use="required"/>
         </xs:complexType>
        </xs:element>
 
@@ -1055,6 +1060,7 @@
           </xs:element>
          </xs:sequence>
          <xs:attribute name="name" type="xs:string" use="required"/>
+         <xs:attribute name="frequency" type="xs:double" use="required"/>
         </xs:complexType>
        </xs:element>
 
