@@ -94,18 +94,38 @@ static const char * token_get(const char *buffer, DynStr **token, TokenStatus *s
 			buffer += 2;
 			if(strncmp(buffer, "[CDATA[", 7) == 0)	/* CDATA section detected, extract and return as text. */
 			{
+				const char	*eptr;
+
 				buffer += 7;
 				*status = TEXT;
-				while(*buffer && strncmp(buffer, "]]>", 3) != 0)
+				if((eptr = strstr(buffer, "]]>")) == NULL)
 				{
-					if(strncmp(buffer, "&gt;", 4) == 0)	/* Bare-bones "entity support". */
-					{
-						dynstr_append_c(d, '>');
-						buffer += 4;
-					}
-					else
-						dynstr_append_c(d, *buffer++);
+					dynstr_destroy(d, 1);
+					LOG_ERR(("Unterminated CDATA directive, aborting"));
+					*status = ERROR;
+					return buffer;
 				}
+				while(*buffer && buffer < eptr)
+				{
+					if(*buffer == '&')
+					{
+						if(strncmp(buffer, "&gt;", 4) == 0)	/* Bare-bones "entity support". */
+						{
+							dynstr_append_c(d, '>');
+							buffer += 4;
+							continue;
+						}
+						if(strncmp(buffer, "&amp;", 4) == 0)
+						{
+							dynstr_append_c(d, '&');
+							buffer += 5;
+							continue;
+						}
+					}
+					dynstr_append_c(d, *buffer++);
+				}
+				if(strncmp(buffer, "]]>", 3) == 0)
+					buffer += 3;
 			}
 			else
 			{
