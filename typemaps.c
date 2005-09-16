@@ -141,3 +141,13 @@ VNBLayerType b_layer_type_from_string(const char *str)
 	return lookup(map, sizeof map / sizeof *map, str);
 #undef LT
 }
+
+VNABlockType a_block_type_from_string(const char *str)
+{
+#define	BT(n,t)	{ n, VN_A_BLOCK_##t }
+	const Entry map[] = {
+		BT("int8", INT8), BT("int16", INT16), BT("int24", INT24), BT("real32", REAL32), BT("real64", REAL64)
+	};
+	return lookup(map, sizeof map / sizeof *map, str);
+#undef BT
+}

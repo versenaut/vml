@@ -15,3 +15,4 @@ extern VNMBlendType	m_blend_type_from_string(const char *str);
 extern VNMRampType	m_ramp_type_from_string(const char *str);
 extern VNMRampChannel	m_ramp_channel_from_string(const char *str);
 extern VNBLayerType	b_layer_type_from_string(const char *str);
+extern VNABlockType	a_block_type_from_string(const char *str);
