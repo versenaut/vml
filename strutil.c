@@ -46,13 +46,16 @@ char * stu_strdup_maxlen(const char *str, size_t max)
 
 char * stu_strncpy(char *dest, size_t max, const char *src)
 {
-	char	*base = dest;
+	char	*base;
 	
-	if(dest == NULL || src == NULL)
+	if(dest == NULL || max == 0)
 		return NULL;
-	if(max == 0)
-		return NULL;
-	for(max--; max > 0 && *src != '\0'; max--)
+	if(src == NULL)
+	{
+		*dest = '\0';
+		return dest;
+	}
+	for(base = dest, max--; max > 0 && *src != '\0'; max--)
 		*dest++ = *src++;
 	*dest = '\0';
 
