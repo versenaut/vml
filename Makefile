@@ -7,7 +7,7 @@
 VERSE	= ../verse
 
 CFLAGS	= -Wall -I$(VERSE)
-LDFLAGS	= -L $(VERSE)
+LDFLAGS	= -L$(VERSE)
 LDLIBS	= -lverse
 DATE	= `date --iso-8601 | tr -d -`
 
