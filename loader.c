@@ -790,8 +790,28 @@ static int process_geometry(MainInfo *min)
 	}
 	else if(strcmp(el, "bones") == 0)
 	{
-		fprintf(stderr, "loader: Bones skipped, not implemented yet\n");
-		min->iter = xmlnode_iter_next(min->iter, here);
+		List	*bones, *iter;
+		const VNQuat64	norot = { 0 };
+		int	i = 0;
+
+		/* This uses the (new) support for user-assigned ID:s, and just uploads the bones straight
+		 * away, without doing a round-trip with a create-and-pend approach like the rest of this
+		 * program does. If this works, it's something to consider for other items (layers, etc) too.
+		*/
+		bones = xmlnode_nodeset_get(here, XMLNODE_AXIS_CHILD, XMLNODE_NAME("bone"), XMLNODE_DONE);
+		for(iter = bones; iter != NULL; iter = list_next(iter), i++)
+		{
+			const XmlNode	*b = list_data(iter);
+			const char	*wght = xmlnode_eval_single(b, "weight"),
+					*ref = xmlnode_eval_single(b, "reference"),
+					*pr = xmlnode_eval_single(b, "pos-label"),
+					*rr = xmlnode_eval_single(b, "rot-label");
+			uint32		par = child_get_ref(b, "parent", 'b', ~0u);
+
+			verse_send_g_bone_create(min->node_id, (uint16) i, wght, ref, par, i, 0.0, 0.0, pr, &norot, rr);
+		}
+		list_destroy(bones);
+		min->iter = xmlnode_iter_next(min->iter, here);	/* That's it, skip it now. */
 	}
 	else
 		return 0;
