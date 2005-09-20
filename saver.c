@@ -179,15 +179,23 @@ static void save_geometry(FILE *f, ENode *g_node)
 		{
 			real64	 tmp[4];
 			VNQuat64 rot;
-			fprintf(f, "\t\t<bone weight=\"%s\" reference=\"%s\">\n", e_nsg_get_bone_weight(g_node, bone_id), e_nsg_get_bone_reference(g_node, bone_id));
+			fprintf(f, "\t\t<bone id=\"b%u\">\n", bone_id);
+			fprintf(f, "\t\t\t<weight>%s</weight>\n", e_nsg_get_bone_weight(g_node, bone_id));
+			fprintf(f, "\t\t\t<reference>%s</reference>\n", e_nsg_get_bone_reference(g_node, bone_id));
+			if(e_nsg_get_bone_parent(g_node, bone_id) != (uint16) ~0u)
+				fprintf(f, "\t\t\t<parent>b%u</parent>\n", e_nsg_get_bone_parent(g_node, bone_id));
+			else
+				fprintf(f, "\t\t\t<parent/>\n");
 			fprintf(f, "\t\t\t<pos>");
 			e_nsg_get_bone_pos64(g_node, bone_id, tmp);
-			fprintf(f, "\t\t\t\t%g %g %g\n", tmp[0], tmp[1], tmp[2]);
+			fprintf(f, "%f %f %f", tmp[0], tmp[1], tmp[2]);
 			fprintf(f, "</pos>\n");
+			fprintf(f, "\t\t\t<pos-label>%s</pos-label>\n", e_nsg_get_bone_pos_label(g_node, bone_id));
 			fprintf(f, "\t\t\t<rot>");
 			e_nsg_get_bone_rot64(g_node, bone_id, &rot);
-			fprintf(f, "\t\t\t\t%g %g %g %g\n", rot.x, rot.y, rot.z, rot.w);
+			fprintf(f, "%f %f %f %f", rot.x, rot.y, rot.z, rot.w);
 			fprintf(f, "</rot>\n");
+			fprintf(f, "\t\t\t<rot-label>%s</rot-label>\n", e_nsg_get_bone_rot_label(g_node, bone_id));
 			fprintf(f, "\t\t</bone>\n");
 		}
 		fprintf(f, "\t</bones>\n");
