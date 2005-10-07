@@ -333,7 +333,7 @@ static XmlNode * node_new(const char *token)
 
 	if(token != NULL)
 	{
-		for(elen = 0; token[elen] && !isspace(token[elen]); elen++)
+		for(; token[elen] && !isspace(token[elen]); elen++)
 			;
 		if(elen > 0)
 			elen++;		/* Count in the terminator. */
@@ -368,7 +368,11 @@ static void node_child_add(XmlNode *parent, XmlNode *child)
 {
 	if(parent == NULL || child == NULL)
 		return;
-	parent->children = list_append(parent->children, child);
+	/* For performance reasons, we prepend children, then reverse the lists as
+	 * a final step. This is far faster, since the append() operation is O(N)
+	 * while prepend is O(1). This is roughly twice the speed.
+	*/
+	parent->children = list_prepend(parent->children, child);
 	child->parent    = parent;
 }
 
@@ -488,6 +492,20 @@ static XmlNode * build_tree(XmlNode *parent, const char **buffer, int *complete)
 	return parent;
 }
 
+/* Recursively reverse all child lists, since we use prepend() when
+ * constructing the tree. Should be quicker. Done in-place.
+*/
+static void tree_reverse_children(XmlNode *root)
+{
+	const List	*iter;
+
+	if(root == NULL)
+		return;
+	root->children = list_reverse(root->children);
+	for(iter = root->children; iter != NULL; iter = list_next(iter))
+		tree_reverse_children(list_data(iter));
+}
+
 XmlNode * xmlnode_new(const char *buffer)
 {
 	XmlNode	*root;
@@ -501,6 +519,7 @@ XmlNode * xmlnode_new(const char *buffer)
 		xmlnode_destroy(root);
 		return NULL;
 	}
+	tree_reverse_children(root);
 	return root;
 }
 
@@ -553,7 +572,7 @@ List * filter_list(List *list, void **filter)
 		cmd = (int) *filter++;
 		switch(cmd)
 		{
-		case XMLNODE_DONE:
+		case XMLNODE_FILTER_ACCEPT:
 			return list;
 		case XMLNODE_AXIS_SELF:		/* Fall-through. */
 		case XMLNODE_AXIS_ANCESTOR:
