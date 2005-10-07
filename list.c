@@ -24,7 +24,7 @@ static MemChunk	*the_chunk = NULL;
 
 void list_init(void)
 {
-	the_chunk = memchunk_new("List", sizeof (List), 16);
+	the_chunk = memchunk_new("List", sizeof (List), 64);
 }
 
 /* ----------------------------------------------------------------------------------------- */
