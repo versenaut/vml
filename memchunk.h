@@ -18,6 +18,7 @@ typedef struct MemChunk	MemChunk;
 
 extern MemChunk *	memchunk_new(const char *name, size_t chunk_size, size_t growth);
 extern size_t		memchunk_chunk_size(const MemChunk *chunk);
+extern size_t		memchunk_growth(const MemChunk *chunk);
 extern void *		memchunk_alloc(MemChunk *chunk);
 extern void		memchunk_free(MemChunk *chunk, void *ptr);
 extern void		memchunk_destroy(MemChunk *chunk);
