@@ -1,0 +1,70 @@
+#
+# Build Purple. Simple hand-written (and rather verbose) Makefile, for now.
+#
+
+# Location of a (compiled) Verse core directory. Must contain verse.h and libverse.a.
+VERSE=..\verse-sdk
+
+# Location of enough header and library files. Typically "quelsolaar" CVS module.
+ENOUGH=..\quelsolaar
+
+TARGETS=loader.exe saver.exe
+
+ALL:		$(TARGETS)
+
+CFLAGS=/nologo /I$(VERSE)\include
+
+
+loader.exe:	loader.obj typemaps.obj\
+		dynstr.obj list.obj log.obj mem.obj memchunk.obj strutil.obj xmlnode.obj
+		$(CC) $(CFLAGS) $** $(VERSE)/lib/verse.lib wsock32.lib
+
+saver.exe:	saver.c
+		$(CC) $(CFLAGS) /I$(ENOUGH) $** $(VERSE)/lib/verse.lib $(ENOUGH)/enough.lib wsock32.lib
+		
+loader.obj:	loader.c
+
+typemaps.obj:	typemaps.c typemaps.h
+
+# --- Parts of Purple, used to get the XML parser. --------------------------------------
+
+dynstr.obj:	dynstr.c dynstr.h
+
+list.obj:	list.c list.h
+
+log.obj:	log.c log.h
+
+mem.obj:	mem.c mem.h
+
+memchunk.obj:	memchunk.c memchunk.h mem.h
+
+strutil.obj:	strutil.c strutil.h
+
+xmlnode.obj:	xmlnode.c xmlnode.h
+
+# ---------------------------------------------------------
+
+clean:
+	rm -f *.obj *.so $(TARGETS)
+
+# This assumes that %DATE% generates date part in ISO 8501 format.
+# I don't know of a way to actually specify the format, so if the
+# current locale uses a different format, things will break badly. :/
+d=%date:~-10%%
+# Here, I would like to do:
+# d=%d:-=% to get rid of the hyphens.
+# That doesn't work though, so the hyphens are still there. :/
+
+# Build final distro directory name.
+dn=vml-tools-$(d)-win32
+
+dist:	$(TARGETS)
+	echo $(dn)
+ 	if exist $(dn). ( rmdir /s /q $(dn). )
+	mkdir $(dn)
+	copy /b loader.exe $(dn)
+	copy /b saver.exe $(dn)
+	copy /a README $(dn)
+	echo Now zip up the $(dn) folder, please
+#	zip -r $(dn).zip $(dn)
+#	rmdir /s /q $(dn)
