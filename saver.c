@@ -638,7 +638,7 @@ static void save_data(FILE *f)
 	ENode *node;
 	uint i;
 
-	fprintf(f, "<?xml version=\"1.0\"?>\n\n");
+	fprintf(f, "<?xml version=\"1.0\" encoding=\"latin1\"?>\n\n");
 	fprintf(f, "<vml version=\"1.0\">\n\n");
 	for(i = 0; i < V_NT_NUM_TYPES; i++)
 		for(node = e_ns_get_node_next(0, 0, i); node != NULL; node = e_ns_get_node_next(e_ns_get_node_id(node) + 1, 0, i))
