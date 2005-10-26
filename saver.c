@@ -387,7 +387,14 @@ static void tile_get(VNBTile *tile, int x, int y, int z, const void *data, VNBLa
 		for(tx = 0; tx < tw; tx++, put++, get++)
 		{
 			if(type == VN_B_LAYER_UINT1)
-				tile->vuint1[put] = 0;	/* FIXME: Code missing here. Not certain of Enough's 1-bit format. */
+			{
+				size_t	rw = (size[0] + 7) / 8;
+
+				zoff = size[1] * rw * z;
+				put = ty;
+				tile->vuint1[put] = ((uint8 *) data)[zoff + (y * VN_B_TILE_SIZE + ty) * rw + x];
+				break;	/* Don't need to loop in X dimension, above copies all pixels. */
+			}
 			else if(type == VN_B_LAYER_UINT8)
 				tile->vuint8[put] = ((uint8 *) data)[get];
 			else if(type == VN_B_LAYER_UINT16)
