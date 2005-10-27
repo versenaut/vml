@@ -21,7 +21,7 @@
 
 /* ----------------------------------------------------------------------------------------- */
 
-typedef enum { TAG, TAGEMPTY, TEXT, ERROR } TokenStatus;
+typedef enum { COMMENT, TAG, TAGEMPTY, TEXT, ERROR } TokenStatus;
 
 typedef struct
 {
@@ -126,6 +126,14 @@ static const char * token_get(const char *buffer, DynStr **token, TokenStatus *s
 				}
 				if(strncmp(buffer, "]]>", 3) == 0)
 					buffer += 3;
+			}
+			else if(strncmp(buffer, "--", 2) == 0)
+			{
+				buffer += 2;
+				while(*buffer && strncmp(buffer, "--", 2) != 0)
+					dynstr_append_c(d, *buffer++);
+				*status = COMMENT;
+				return buffer;
 			}
 			else
 			{
@@ -485,6 +493,8 @@ static XmlNode * build_tree(XmlNode *parent, const char **buffer, int *complete)
 					token = NULL;
 				}
 			}
+			else if(st == COMMENT)		/* Ignore this comment. */
+				;
 		}
 		else
 			break;
