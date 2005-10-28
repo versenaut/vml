@@ -132,8 +132,17 @@ static const char * token_get(const char *buffer, DynStr **token, TokenStatus *s
 				buffer += 2;
 				while(*buffer && strncmp(buffer, "--", 2) != 0)
 					dynstr_append_c(d, *buffer++);
+				buffer += 2;
+				if(*buffer != '>')
+				{
+					LOG_ERR(("Parse error in comment, expected '>' after double dash, found '%c'", *buffer));
+					*status = ERROR;
+					dynstr_destroy(d, 1);
+					*token = NULL;
+					return buffer;
+				}
+				buffer++;
 				*status = COMMENT;
-				return buffer;
 			}
 			else
 			{
@@ -494,7 +503,10 @@ static XmlNode * build_tree(XmlNode *parent, const char **buffer, int *complete)
 				}
 			}
 			else if(st == COMMENT)		/* Ignore this comment. */
-				;
+			{
+				dynstr_destroy(token, 1);
+				token = NULL;
+			}
 		}
 		else
 			break;
