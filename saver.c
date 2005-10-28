@@ -102,10 +102,15 @@ static void save_geometry(FILE *f, ENode *g_node)
 	poly_count = e_nsg_get_polygon_length(g_node);
 	vertex = e_nsg_get_layer_data(g_node, e_nsg_get_layer_by_id(g_node,  0));
 	ref = e_nsg_get_layer_data(g_node, e_nsg_get_layer_by_id(g_node,  1));
-
+	
 	for(layer = e_nsg_get_layer_next(g_node, 0); layer != NULL; layer = e_nsg_get_layer_next(g_node, e_nsg_get_layer_id(layer) + 1))
 	{
 		data = e_nsg_get_layer_data(g_node, layer);
+		if(data == NULL)
+		{
+			fprintf(f, "\t\t<!-- layer %s skipped here, data missing -->\n", e_nsg_get_layer_name(layer));
+			continue;
+		}
 		type = e_nsg_get_layer_type(layer);
 		if(type < VN_G_LAYER_POLYGON_CORNER_UINT32)
 			lt = layer_el[type];
@@ -152,10 +157,12 @@ static void save_geometry(FILE *f, ENode *g_node)
 			break;
 			case VN_G_LAYER_POLYGON_FACE_UINT32 :
 				for(i = 0; i < poly_count; i++)
+				{
 					if(ref[i * 4] < vertex_count && vertex[ref[i * 4] * 3] != E_REAL_MAX &&
 						ref[i * 4 + 1] < vertex_count && vertex[ref[i * 4 + 1] * 3] != E_REAL_MAX &&
 						ref[i * 4 + 2] < vertex_count && vertex[ref[i * 4 + 2] * 3] != E_REAL_MAX)
 						fprintf(f, "\t\t\t<p>%u</p>\n", ((uint32 *)data)[i]);
+				}
 			break;
 			case VN_G_LAYER_POLYGON_FACE_REAL :
 				for(i = 0; i < poly_count; i++)
@@ -164,6 +171,8 @@ static void save_geometry(FILE *f, ENode *g_node)
 						ref[i * 4 + 2] < vertex_count && vertex[ref[i * 4 + 2] * 3] != E_REAL_MAX)
 						fprintf(f, "\t\t\t<p>%f</p>\n", ((egreal *)data)[i]);
 			break;
+			default:
+				fprintf(f, "\t\t<!-- data of unknown type %d skipped -->\n", e_nsg_get_layer_type(layer));
 		}
 		fprintf(f, "\t\t</layer-%s>\n", lt);
 	}
