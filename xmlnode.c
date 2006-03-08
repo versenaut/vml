@@ -755,7 +755,7 @@ static void iter_traverse(const XmlNode *node, List **list)
 {
 	const List	*iter;
 
-	*list = list_append(*list, (void *) node);
+	*list = list_prepend(*list, (void *) node);	/* Prepend, for more speed. */
 	for(iter = node->children; iter != NULL; iter = list_next(iter))
 		iter_traverse(list_data(iter), list);
 }
@@ -764,7 +764,9 @@ List * xmlnode_iter_begin(const XmlNode *root)
 {
 	List	*flat = NULL;
 
+	/* Build the flat list, recursively. This is done in reverse. */
 	iter_traverse(root, &flat);
+	flat = list_reverse(flat);	/* Reverse the list before returning it. */
 
 	return flat;
 }
