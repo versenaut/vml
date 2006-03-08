@@ -1702,8 +1702,8 @@ static int type_to_position(const char *type)
 static int cmp_node(const void *a, const void *b)
 {
 	const XmlNode	*na = a, *nb = b;
-	const char	*ta = xmlnode_get_name(na) + 4,
-			*tb = xmlnode_get_name(nb) + 4;
+	const char	*ta = xmlnode_get_name(na) + 4 + 1,
+			*tb = xmlnode_get_name(nb) + 4 + 1;
 	int		pa = type_to_position(ta), pb = type_to_position(tb);
 
 	return pa < pb ? -1 : pa > pb;
@@ -1715,16 +1715,14 @@ static List * file_begin(MainInfo *min)
 
 	list = xmlnode_nodeset_get(list_data(min->files), XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("node"), XMLNODE_DONE);
 	for(iter = list; iter != NULL; iter = list_next(iter))
-	{
 		sorted = list_insert_sorted(sorted, list_data(iter), cmp_node);
-	}
 	return sorted;
 }
 
 static void cb_connect_accept(void *user, VNodeID avatar, const char *address, const uint8 *host_id)
 {
 	MainInfo	*min = user;
-	List		*sorted, *iter;
+	List		*sorted, *iter, *last = NULL;
 
 	min->avatar = avatar;
 	message(min, 1, "Connected as %u to %s\n", avatar, address);
@@ -1732,10 +1730,22 @@ static void cb_connect_accept(void *user, VNodeID avatar, const char *address, c
 
 	/* Sort the nodes in a good access-order, then flatten them and concatenate the resulting element-lists. */
 	min->file_nodes = NULL;
+	/* This loop avoids doing concat() from the head of the list, instead maintaining a last-pointer
+	 * and concatenating only from there. This (roughly) doubles the speed on a big VML file.
+	*/
 	for(iter = sorted = file_begin(min); iter != NULL; iter = list_next(iter))
-		min->file_nodes = list_concat(min->file_nodes, xmlnode_iter_begin(list_data(iter)));
+	{
+		List *elems = xmlnode_iter_begin(list_data(iter));
+		if(last == NULL)
+			last = min->file_nodes = list_concat(min->file_nodes, elems);
+		else
+			list_concat(last, elems);
+		last = list_last(elems);
+	}
+
 	list_destroy(sorted);
 	min->iter = min->file_nodes;/*xmlnode_iter_next(min->list, NULL);*/	/* Skip the toplevel "vml" node. */
+
 	min->pending = PEND_NONE;
 }
 
@@ -1744,6 +1754,7 @@ static void cb_connect_accept(void *user, VNodeID avatar, const char *address, c
 XmlNode * load(const char *filename)
 {
 	FILE	*in;
+	struct timeval t1, t2;
 
 	if((in = fopen(filename, "r")) != NULL)
 	{
