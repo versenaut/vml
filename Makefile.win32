@@ -45,7 +45,7 @@ xmlnode.obj:	xmlnode.c xmlnode.h
 # ---------------------------------------------------------
 
 clean:
-	rm -f *.obj *.so $(TARGETS)
+	del *.obj *.so $(TARGETS)
 
 # This assumes that %DATE% generates date part in ISO 8501 format.
 # I don't know of a way to actually specify the format, so if the
