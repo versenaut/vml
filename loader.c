@@ -1754,7 +1754,6 @@ static void cb_connect_accept(void *user, VNodeID avatar, const char *address, c
 XmlNode * load(const char *filename)
 {
 	FILE	*in;
-	struct timeval t1, t2;
 
 	if((in = fopen(filename, "r")) != NULL)
 	{
