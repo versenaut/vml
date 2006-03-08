@@ -58,12 +58,15 @@ DynStr * dynstr_new_sized(size_t size)
 {
 	DynStr	*ds;
 
+	if(size == 0)
+		return NULL;
 	if((ds = mem_alloc(sizeof *ds)) != NULL)
 	{
 		if((ds->str = mem_alloc(size)) != NULL)
 		{
-			ds->len   = 0;
-			ds->alloc = size;
+			ds->str[0] = '\0';	/* Make sure string is properly terminated, and empty. */
+			ds->len    = 0;
+			ds->alloc  = size;
 			return ds;
 		}
 		mem_free(ds);
