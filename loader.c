@@ -1870,8 +1870,10 @@ int main(int argc, char *argv[])
 		if(min.pending == PEND_NONE && min.iter != NULL)
 			step(&min);
 	}
-	while(verse_session_get_size() > 10)
+	do
+	{
 		verse_callback_update(10000);
+	} while(verse_session_get_size() >= 10);
 
 	verse_send_connect_terminate("localhost", "All done, exiting");
 	message(&min, 2, "All done, exiting\n");
