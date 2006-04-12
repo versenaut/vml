@@ -57,6 +57,9 @@ typedef struct
 	Dict		tag_groups;
 	Dict		layer_ids;	/* Temporary structure for tracking layers. */
 
+	double		o_pos_scale;
+	double		g_xyz_scale;
+
 	VNMFragmentID	*fragment_map;
 	size_t		fragment_map_size;
 
@@ -449,7 +452,10 @@ static int process_object(MainInfo *min)
 			real64	pos[3];
 
 			if(sscanf(txt, "%lg %lg %lg", pos, pos + 1, pos + 2) == 3)
-			{	
+			{
+				pos[0] *= min->o_pos_scale;
+				pos[1] *= min->o_pos_scale;
+				pos[2] *= min->o_pos_scale;
 				verse_send_o_transform_pos_real64(min->node_id, 0u, 0u, pos, NULL, NULL, NULL, 0.0);
 				min->iter = xmlnode_iter_next(min->iter, NULL);
 			}
@@ -571,13 +577,13 @@ static int process_object(MainInfo *min)
 	return 1;
 }
 
-static int g_scan_send_vertex_xyz(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index)
+static int g_scan_send_vertex_xyz(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index, MainInfo *min)
 {
 	real64	*xyz = tmp;
 
 	if(sscanf(element, "%u %lg %lg %lg", &index, xyz, xyz + 1, xyz + 2) == 4)
 	{
-		verse_send_g_vertex_set_xyz_real64(node_id, layer_id, index, xyz[0], xyz[1], xyz[2]);
+		verse_send_g_vertex_set_xyz_real64(node_id, layer_id, index, min->g_xyz_scale * xyz[0], min->g_xyz_scale * xyz[1], min->g_xyz_scale * xyz[2]);
 		return 1;
 	}
 	else
@@ -585,7 +591,7 @@ static int g_scan_send_vertex_xyz(VNodeID node_id, VLayerID layer_id, const char
 	return 0;
 }
 
-static int g_scan_send_vertex_uint32(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index)
+static int g_scan_send_vertex_uint32(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index, MainInfo *min)
 {
 	uint32	*v = tmp;
 
@@ -597,7 +603,7 @@ static int g_scan_send_vertex_uint32(VNodeID node_id, VLayerID layer_id, const c
 	return 0;
 }
 
-static int g_scan_send_vertex_real(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index)
+static int g_scan_send_vertex_real(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index, MainInfo *min)
 {
 	real64	*v = tmp;
 
@@ -609,7 +615,7 @@ static int g_scan_send_vertex_real(VNodeID node_id, VLayerID layer_id, const cha
 	return 0;
 }
 
-static int g_scan_send_polygon_corner_uint32(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index)
+static int g_scan_send_polygon_corner_uint32(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index, MainInfo *min)
 {
 	uint32	*v = tmp;
 
@@ -622,7 +628,7 @@ static int g_scan_send_polygon_corner_uint32(VNodeID node_id, VLayerID layer_id,
 	return 0;
 }
 
-static int g_scan_send_polygon_corner_real(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index)
+static int g_scan_send_polygon_corner_real(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index, MainInfo *min)
 {
 	real64	*v = tmp;
 
@@ -634,7 +640,7 @@ static int g_scan_send_polygon_corner_real(VNodeID node_id, VLayerID layer_id, c
 	return 0;
 }
 
-static int g_scan_send_polygon_face_uint8(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index)
+static int g_scan_send_polygon_face_uint8(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index, MainInfo *min)
 {
 	uint32	*v = tmp;
 
@@ -646,7 +652,7 @@ static int g_scan_send_polygon_face_uint8(VNodeID node_id, VLayerID layer_id, co
 	return 0;
 }
 
-static int g_scan_send_polygon_face_uint32(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index)
+static int g_scan_send_polygon_face_uint32(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index, MainInfo *min)
 {
 	uint32	*v = tmp;
 
@@ -658,7 +664,7 @@ static int g_scan_send_polygon_face_uint32(VNodeID node_id, VLayerID layer_id, c
 	return 0;
 }
 
-static int g_scan_send_polygon_face_real(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index)
+static int g_scan_send_polygon_face_real(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index, MainInfo *min)
 {
 	real64	*v = tmp;
 
@@ -675,7 +681,8 @@ static int g_scan_send_polygon_face_real(VNodeID node_id, VLayerID layer_id, con
  * rary storage and an index number. The storage should be enough for the largest type (4 * real64).
 */
 static void g_set_layer(VNodeID node_id, VLayerID layer_id, const XmlNode *layer, const char *elname,
-			int (*scan_send)(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index))
+			int (*scan_send)(VNodeID node_id, VLayerID layer_id, const char *element, void *tmp, uint32 index, MainInfo *min),
+			MainInfo *min)
 {
 	List	*points, *iter;
 	real64	tmp[4];
@@ -686,7 +693,7 @@ static void g_set_layer(VNodeID node_id, VLayerID layer_id, const XmlNode *layer
 	{
 		const char	*txt = xmlnode_eval_single(list_data(iter), "");
 
-		if(txt != NULL && scan_send(node_id, layer_id, txt, tmp, index))
+		if(txt != NULL && scan_send(node_id, layer_id, txt, tmp, index, min))
 			index++;
 	}
 	list_destroy(points);
@@ -740,28 +747,28 @@ static int process_geometry(MainInfo *min)
 		switch(lt)
 		{
 		case VN_G_LAYER_VERTEX_XYZ:
-			g_set_layer(min->node_id, id, here, "v", g_scan_send_vertex_xyz);
+			g_set_layer(min->node_id, id, here, "v", g_scan_send_vertex_xyz, min);
 			break;
 		case VN_G_LAYER_VERTEX_UINT32:
-			g_set_layer(min->node_id, id, here, "v", g_scan_send_vertex_uint32);
+			g_set_layer(min->node_id, id, here, "v", g_scan_send_vertex_uint32, min);
 			break;
 		case VN_G_LAYER_VERTEX_REAL:
-			g_set_layer(min->node_id, id, here, "v", g_scan_send_vertex_real);
+			g_set_layer(min->node_id, id, here, "v", g_scan_send_vertex_real, min);
 			break;
 		case VN_G_LAYER_POLYGON_CORNER_UINT32:
-			g_set_layer(min->node_id, id, here, "p", g_scan_send_polygon_corner_uint32);
+			g_set_layer(min->node_id, id, here, "p", g_scan_send_polygon_corner_uint32, min);
 			break;
 		case VN_G_LAYER_POLYGON_CORNER_REAL:
-			g_set_layer(min->node_id, id, here, "p", g_scan_send_polygon_corner_real);
+			g_set_layer(min->node_id, id, here, "p", g_scan_send_polygon_corner_real, min);
 			break;
 		case VN_G_LAYER_POLYGON_FACE_UINT8:
-			g_set_layer(min->node_id, id, here, "p", g_scan_send_polygon_face_uint8);
+			g_set_layer(min->node_id, id, here, "p", g_scan_send_polygon_face_uint8, min);
 			break;
 		case VN_G_LAYER_POLYGON_FACE_UINT32:
-			g_set_layer(min->node_id, id, here, "p", g_scan_send_polygon_face_uint32);
+			g_set_layer(min->node_id, id, here, "p", g_scan_send_polygon_face_uint32, min);
 			break;
 		case VN_G_LAYER_POLYGON_FACE_REAL:
-			g_set_layer(min->node_id, id, here, "p", g_scan_send_polygon_face_real);
+			g_set_layer(min->node_id, id, here, "p", g_scan_send_polygon_face_real, min);
 			break;
 		}
 		min->iter = xmlnode_iter_next(min->iter, here);
@@ -1792,15 +1799,31 @@ int main(int argc, char *argv[])
 
 	min.files = NULL;
 	min.log_level = 0;
+	min.o_pos_scale = 1.0;		/* Global scale on all object positions. */
+	min.g_xyz_scale = 1.0;		/* Global scale on all XYZ vertex data. */
 
 	for(i = 1; argv[i] != NULL; i++)
 	{
 		if(strncmp(argv[i], "-ip=", 4) == 0)
 			server = argv[i] + 4;
 		else if(strncmp(argv[i], "-v", 2) == 0)
-			for(j = 1; argv[i][j] == 'v'; j++, min.log_level++);
+			for(j = 1; argv[i][j] == 'v'; j++, min.log_level++)
+				;
 		else if(strncmp(argv[i], "-q", 2) == 0)
-			for(j = 1; argv[i][j] == 'q'; j++, min.log_level--);
+			for(j = 1; argv[i][j] == 'q'; j++, min.log_level--)
+				;
+		else if(strncmp(argv[i], "-scale=", 7) == 0)
+		{
+			char	*eptr = NULL;
+			double	s = strtod(argv[i] + 7, &eptr);
+			if(eptr && eptr > argv[i] + 7)
+			{
+				min.o_pos_scale = s;
+				min.g_xyz_scale = s;
+			}
+			else
+				fprintf(stderr, "loader: Couldn't parse floating point number from '%s'\n", argv[i] + 7);
+		}
 		else if(argv[i][0] != '-')
 		{
 			n = load(argv[i]);
