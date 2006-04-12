@@ -1722,29 +1722,10 @@ static List * file_begin(MainInfo *min)
 static void cb_connect_accept(void *user, VNodeID avatar, const char *address, const uint8 *host_id)
 {
 	MainInfo	*min = user;
-	List		*sorted, *iter, *last = NULL;
 
 	min->avatar = avatar;
 	message(min, 1, "Connected as %u to %s\n", avatar, address);
 	verse_send_node_index_subscribe(~0);
-
-	/* Sort the nodes in a good access-order, then flatten them and concatenate the resulting element-lists. */
-	min->file_nodes = NULL;
-	/* This loop avoids doing concat() from the head of the list, instead maintaining a last-pointer
-	 * and concatenating only from there. This (roughly) doubles the speed on a big VML file.
-	*/
-	for(iter = sorted = file_begin(min); iter != NULL; iter = list_next(iter))
-	{
-		List *elems = xmlnode_iter_begin(list_data(iter));
-		if(last == NULL)
-			last = min->file_nodes = list_concat(min->file_nodes, elems);
-		else
-			list_concat(last, elems);
-		last = list_last(elems);
-	}
-
-	list_destroy(sorted);
-	min->iter = min->file_nodes;/*xmlnode_iter_next(min->list, NULL);*/	/* Skip the toplevel "vml" node. */
 
 	min->pending = PEND_NONE;
 }
@@ -1773,6 +1754,31 @@ XmlNode * load(const char *filename)
 		return n;
 	}
 	return NULL;
+}
+
+/* Sort the nodes in a good access-order, then flatten them and concatenate the resulting element-lists.
+ * This potentially takes a while, for very large files, so we do it before connecting to avoid time-outs.
+*/
+static void sort_nodes(MainInfo *min)
+{
+	List	*sorted, *iter, *last = NULL;
+
+	min->file_nodes = NULL;
+	/* This loop avoids doing concat() from the head of the list, instead maintaining a last-pointer
+	 * and concatenating only from there. This (roughly) doubles the speed on a big VML file.
+	*/
+	for(iter = sorted = file_begin(min); iter != NULL; iter = list_next(iter))
+	{
+		List *elems = xmlnode_iter_begin(list_data(iter));
+		if(last == NULL)
+			last = min->file_nodes = list_concat(min->file_nodes, elems);
+		else
+			list_concat(last, elems);
+		last = list_last(elems);
+	}
+
+	list_destroy(sorted);
+	min->iter = min->file_nodes;
 }
 
 int main(int argc, char *argv[])
@@ -1825,8 +1831,6 @@ int main(int argc, char *argv[])
 	verse_callback_set(verse_send_t_buffer_create,		cb_t_buffer_create,		&min);
 	verse_callback_set(verse_send_a_buffer_create,		cb_a_buffer_create,		&min);
 
-	verse_send_connect("loader", "<secret>", server, NULL);
-
 	min.avatar = ~0u;
 	min.pending = PEND_CONNECT;
 	min.pend_count = 0;
@@ -1839,6 +1843,10 @@ int main(int argc, char *argv[])
 	dict_ctor(&min.tag_groups);
 	dict_ctor(&min.layer_ids);
 
+	sort_nodes(&min);
+
+	verse_send_connect("loader", "<secret>", server, NULL);
+
 	/* Wait for connect to happen, otherwise min.iter is NULL and below loop exits too soon. */
 	while(min.avatar == ~0u)
 		verse_callback_update(10000);
@@ -1847,7 +1855,7 @@ int main(int argc, char *argv[])
 	min.skip_objects = 1;
 	last_pend = -1;
 	last_count = -1;
-	message(&min, 1, "About to upload non-object nodes\n2");
+	message(&min, 1, "About to upload non-object nodes\n");
 	while(min.iter != NULL)
 	{
 		verse_callback_update(10000);
