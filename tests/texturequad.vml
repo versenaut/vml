@@ -26,7 +26,7 @@
    <p>0 1 3 2</p>
   </layer-polygon-corner-uint32>
   <layer-polygon-corner-real name="map_u">
-   <p>0.0 1.0 0.0 1.0</p>
+   <p>0.0 1.0 1.0 0.0</p>
   </layer-polygon-corner-real>
   <layer-polygon-corner-real name="map_v">
    <p>0.0 0.0 1.0 1.0</p>
