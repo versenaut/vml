@@ -28,6 +28,9 @@ extern void	dynstr_printf(DynStr *str, const char *fmt, ...);
 /* Append <text> to <str>. */
 extern void	dynstr_append(DynStr *str, const char *text);
 
+/* Append <len> bytes from <text> to <str>. The text should not contain any NUL characters (not even for termination). */
+extern void	dynstr_append_len(DynStr *str, const char *text, size_t len);
+
 /* Append the single character <c> to <str>. */
 extern void	dynstr_append_c(DynStr *str, char c);
 

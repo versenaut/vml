@@ -155,22 +155,32 @@ void dynstr_printf(DynStr *str, const char *fmt, ...)
 void dynstr_append(DynStr *str, const char *text)
 {
 	size_t	len;
-	char	*nb;
 
 	if(str == NULL || text == NULL || *text == '\0')
 		return;
 	len = strlen(text);
+	dynstr_append_len(str, text, len);
+}
+
+void dynstr_append_len(DynStr *str, const char *text, size_t len)
+{
+	char	*nb;
+
+	if(str == NULL || text == NULL || len == 0)
+		return;
 	if(str->len + len + 1 <= str->alloc)
 	{
-		strcpy(str->str + str->len, text);
+		memcpy(str->str + str->len, text, len);
 		str->len += len;
+		str->str[str->len] = '\0';
 		return;
 	}
 	if((nb = mem_realloc(str->str, str->alloc + len + 1 + APPEND_MARGIN)) != NULL)
 	{
 		str->str = nb;
-		strcpy(str->str + str->len, text);
+		memcpy(str->str + str->len, text, len);
 		str->len += len;
+		str->str[str->len] = '\0';
 		str->alloc = str->alloc + len + 1 + APPEND_MARGIN;
 /*		LOG_MSG(("String grew to %u bytes, with %u allocated", str->len, str->alloc));*/
 		return;
