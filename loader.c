@@ -1745,16 +1745,13 @@ XmlNode * load(const char *filename)
 
 	if((in = fopen(filename, "r")) != NULL)
 	{
-		char	buf[1024];
-		DynStr	*text = dynstr_new_sized(2048);
+		char	buf[2048];
+		DynStr	*text = dynstr_new_sized(32 << 10);
 		size_t	got;
 		XmlNode	*n;
 
-		while((got = fread(buf, 1, sizeof buf - 1, in)) > 0)
-		{
-			buf[got] = '\0';
-			dynstr_append(text, buf);
-		}
+		while((got = fread(buf, 1, sizeof buf, in)) > 0)
+			dynstr_append_len(text, buf, got);
 		fclose(in);
 		n = xmlnode_new(dynstr_string(text));
 		dynstr_destroy(text, 1);
