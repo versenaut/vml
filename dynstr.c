@@ -198,13 +198,7 @@ void dynstr_append_c(DynStr *str, char c)
 		str->str[str->len] = '\0';
 	}
 	else
-	{
-		char	buf[2];
-
-		buf[0] = c;
-		buf[1] = '\0';
-		dynstr_append(str, buf);
-	}
+		dynstr_append_len(str, &c, 1);
 }
 
 void dynstr_append_printf(DynStr *str, const char *fmt, ...)
