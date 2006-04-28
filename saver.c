@@ -771,5 +771,5 @@ int main(int argc, char **argv)
 			break;
 		printf("Waiting %u seconds until next save\n", interval);
 	}
-	return TRUE;
+	return EXIT_SUCCESS;
 }
