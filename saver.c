@@ -651,14 +651,20 @@ static void save_node(FILE *f, ENode *node)
 
 static void save_data(FILE *f)
 {
-	ENode *node;
+	ENode *node, *me = e_ns_get_node_avatar(0);
 	uint i;
 
 	fprintf(f, "<?xml version=\"1.0\" encoding=\"latin1\"?>\n\n");
 	fprintf(f, "<vml version=\"1.0\">\n\n");
 	for(i = 0; i < V_NT_NUM_TYPES; i++)
+	{
 		for(node = e_ns_get_node_next(0, 0, i); node != NULL; node = e_ns_get_node_next(e_ns_get_node_id(node) + 1, 0, i))
+		{
+			if(node == me)
+				continue;
 			save_node(f, node);
+		}
+	}
 	fprintf(f, "</vml>\n\n");
 	fclose(f);
 }
@@ -691,6 +697,18 @@ static const char * find_param(int argc, char **argv, const char *option, const 
 	return default_text;
 }
 
+static int find_param_single(int argc, char **argv, const char *option)
+{
+	int	i;
+
+	for(i = 1; i < argc; i++)
+	{
+		if(strcmp(argv[i], option) == 0)
+			return 1;
+	}
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	uint32 i, seconds, s, interval;
@@ -703,13 +721,10 @@ int main(int argc, char **argv)
 	pass = find_param(argc, argv, "-p", "pass");
 	address = find_param(argc, argv, "-a", "localhost");
 	file = find_param(argc, argv, "-f", "dump.vml");
-	repeat = find_param(argc, argv, "-r", NULL) != NULL;
+	repeat = !find_param_single(argc, argv, "-1");
 	tmp = find_param(argc, argv, "-i", "10");
 	if(tmp != NULL)
-	{
 		interval = strtoul(tmp, NULL, 10);
-		printf("Waiting %u seconds until save\n", interval);
-	}
 
 	for(i = 1; i < argc; i++)
 	{
@@ -733,7 +748,12 @@ int main(int argc, char **argv)
 		return TRUE;
 	}
 	printf("Connecting to %s\n", address);
-	while(interval != 0)
+	do
+	{
+		verse_callback_update(100000);
+	} while(e_ns_get_node_avatar(0) == NULL);
+	printf("Connected, waiting %u seconds until save\n", interval);
+	while(1)
 	{
 		verse_session_get_time(&seconds, NULL);
 		s = seconds;
@@ -749,6 +769,7 @@ int main(int argc, char **argv)
 		printf("Save complete\n");
 		if(!repeat)
 			break;
+		printf("Waiting %u seconds until next save\n", interval);
 	}
 	return TRUE;
 }
