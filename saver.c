@@ -739,13 +739,13 @@ int main(int argc, char **argv)
 			printf("-f <filename>\n");
 			printf("-i <save interval in seconds>\n");
 			printf("-1 Save only once, then exit.\n");
-			return FALSE;
+			return EXIT_SUCCESS;
 		}
 	}
 	if(e_vc_connect(address, name, pass, NULL) == -1)
 	{
 		printf("Error: Invalid server address '%s'\n", address);
-		return TRUE;
+		return EXIT_FAILURE;
 	}
 	printf("Connecting to %s\n", address);
 	do
