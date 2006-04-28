@@ -231,7 +231,6 @@ static void save_material(FILE *f, ENode *m_node)
 	static const char *ramp_type[] = {"VN_M_RAMP_SQUARE", "VN_M_RAMP_LINEAR", "VN_M_RAMP_SMOOTH"};
 	static const char *ramp_channel[] = {"VN_M_RAMP_RED", "VN_M_RAMP_GREEN", "VN_M_RAMP_BLUE"};
 	static const char *blend_type[] = {"VN_M_BLEND_FADE", "VN_M_BLEND_ADD", "VN_M_BLEND_SUBTRACT", "VN_M_BLEND_MULTIPLY", "VN_M_BLEND_DIVIDE", "VN_M_BLEND_DOT"};
-/*	static const char *frag_names[] = {"VN_M_FT_COLOR", "VN_M_FT_LIGHT", "VN_M_FT_REFLECTION", "VN_M_FT_TRANSPARENCY", "VN_M_FT_VOLUME", "VN_M_FT_GEOMETRY", "VN_M_FT_TEXTURE", "VN_M_FT_NOISE", "VN_M_FT_BLENDER", "VN_M_FT_MATRIX", "VN_M_FT_RAMP", "VN_M_FT_ANIMATION", "VN_M_FT_ALTERNATIVE", "VN_M_FT_OUTPUT"};*/
 	static const char *frag_el[] = { "color", "light", "reflection", "transparency", "volume", "geometry", "texture", "noise", "blender", "matrix", "ramp", "animation", "alternative", "output" };
 	VMatFrag *frag;
 	VNMFragmentID id;
@@ -418,7 +417,6 @@ static void tile_get(VNBTile *tile, int x, int y, int z, const void *data, VNBLa
 
 static void save_bitmap(FILE *f, ENode *b_node)
 {
-/*	static const char *layer_type[] = {"VN_B_LAYER_UINT1", "VN_B_LAYER_UINT8", "VN_B_LAYER_UINT16", "VN_B_LAYER_REAL32", "VN_B_LAYER_REAL64"};*/
 	const char *layer_el[] = { "uint1", "uint8", "uint16", "real32", "real64" };
 	EBitLayer *layer;
 	uint size[3], i, j, k, tiles[2], tx, ty;
@@ -583,8 +581,6 @@ static void save_string(FILE *f, const char *p)
 static void save_node(FILE *f, ENode *node)
 {
 	static const char *node_el[] = { "node-object", "node-geometry", "node-material", "node-bitmap", "node-text", "node-curve", "node-audio" };
-/*	static const char *node_type[] = {"V_NT_OBJECT", "V_NT_GEOMETRY", "V_NT_MATERIAL", "V_NT_BITMAP", "V_NT_TEXT", "V_NT_CURVE", "V_NT_AUDIO"};*/
-/*	static const char *tag_type[] = {"VN_TAG_BOOLEAN", "VN_TAG_UINT32", "VN_TAG_REAL64", "VN_TAG_STRING", "VN_TAG_REAL64_VEC3", "VN_TAG_LINK", "VN_TAG_ANIMATION", "VN_TAG_BLOB", "VN_TAG_TYPE_COUNT"};*/
 	static const char *tag_el[] = { "boolean", "uint32", "real64", "string", "real64-vec3", "link", "animation", "blob" };
 	uint16 group_id, tag_id;
 	uint i;
