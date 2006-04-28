@@ -558,6 +558,28 @@ static void save_curve(FILE *f, ENode *c_node)
 	fprintf(f, "\t</curves>\n");
 }
 
+/* Save a string, with XML escapes. */
+static void save_string(FILE *f, const char *p)
+{
+	char	here;
+
+	while((here = *p++) != '\0')
+	{
+		if(here == '<')
+			fputs("&lt;", f);
+		else if(here == '>')
+			fputs("&gt;", f);
+		else if(here == '"')
+			fputs("&quot;", f);
+		else if(here == '&')
+			fputs("&amp;", f);
+		else if(here == '\'')
+			fputs("&apos;", f);
+		else
+			fputc(here, f);
+	}
+}
+
 static void save_node(FILE *f, ENode *node)
 {
 	static const char *node_el[] = { "node-object", "node-geometry", "node-material", "node-bitmap", "node-text", "node-curve", "node-audio" };
@@ -592,7 +614,7 @@ static void save_node(FILE *f, ENode *node)
 						fprintf(f, "%f", tag->vreal64);
 					break;
 					case VN_TAG_STRING :
-						fprintf(f, "%s", tag->vstring);
+						save_string(f, tag->vstring);
 					break;
 					case VN_TAG_REAL64_VEC3 :
 						fprintf(f, "%f %f %f", tag->vreal64_vec3[0], tag->vreal64_vec3[1], tag->vreal64_vec3[2]);
