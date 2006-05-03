@@ -1739,16 +1739,40 @@ static void cb_connect_accept(void *user, VNodeID avatar, const char *address, c
 
 /* ----------------------------------------------------------------------------------------- */
 
-XmlNode * load(const char *filename)
+static XmlNode * load(const char *filename)
 {
 	FILE	*in;
 
 	if((in = fopen(filename, "r")) != NULL)
 	{
-		char	buf[2048];
-		DynStr	*text = dynstr_new_sized(32 << 10);
-		size_t	got;
+		DynStr	*text = NULL;
+		char	buf[512 << 10];
+		int	got;
 		XmlNode	*n;
+
+		if(fseek(in, 0, SEEK_END) == 0)	/* Find size of file, so we can pre-alloc dynstr fully. */
+		{
+			long	size = ftell(in);
+			if(fseek(in, 0, SEEK_SET) != 0)
+			{
+				fprintf(stderr, "loader: Couldn't seek back to start of \"%s\"\n", filename);
+				fclose(in);
+				return NULL;
+			}
+			if(size <= 0)
+			{
+				fprintf(stderr, "loader: Couldn't find size of \"%s\"\n", filename);
+				fclose(in);
+				return NULL;
+			}
+			text = dynstr_new_sized(size + 1);
+		}
+		else
+		{
+			fprintf(stderr, "loader: Couldn't seek to end of \"%s\"\n", filename);
+			fclose(in);
+			return NULL;
+		}
 
 		while((got = fread(buf, 1, sizeof buf, in)) > 0)
 			dynstr_append_len(text, buf, got);
