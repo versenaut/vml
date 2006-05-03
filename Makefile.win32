@@ -16,7 +16,7 @@ CFLAGS=/nologo /I$(VERSE)\include
 
 
 loader.exe:	loader.obj typemaps.obj\
-		dynstr.obj list.obj log.obj mem.obj memchunk.obj strutil.obj xmlnode.obj
+		dynstr.obj hash.obj list.obj log.obj mem.obj memchunk.obj strutil.obj xmlnode.obj
 		$(CC) $(CFLAGS) $** $(VERSE)/lib/verse.lib wsock32.lib
 
 saver.exe:	saver.c
