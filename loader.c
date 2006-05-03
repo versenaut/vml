@@ -1692,16 +1692,22 @@ static void cb_node_create(void *user, VNodeID node_id, VNodeType type, VNodeOwn
 	}
 }
 
+/* Look at the textual type (the suffix of the "node-" VML element name) and compute a relative
+ * position. This places materials after bitmaps, and objects after everything else. Tries to
+ * be at least a bit quicker than strcmp() on the full names, knowing Verse node type names are
+ * unique at the first character.
+*/
 static int type_to_position(const char *type)
 {
-	const char	*order[] = { "audio", "bitmap", "curve", "geometry",
-				     "text", "material", "object" };
-	size_t	i;
-
-	for(i = 0; i < sizeof order / sizeof *order; i++)
+	switch(type[0] - 'a')
 	{
-		if(strcmp(order[i], type) == 0)
-			return i;
+	case 'a' - 'a':	return 0;
+	case 'b' - 'a':	return 1;
+	case 'c' - 'a': return 2;
+	case 'g' - 'a': return 3;
+	case 't' - 'a': return 4;
+	case 'm' - 'a': return 5;
+	case 'o' - 'a': return 6;
 	}
 	return 0;
 }
