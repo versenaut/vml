@@ -15,7 +15,7 @@ ALL:	loader saver
 
 .PHONY:	clean dist
 
-PLIBS	= dynstr.o list.o log.o mem.o memchunk.o strutil.o xmlnode.o
+PLIBS	= dynstr.o hash.o list.o log.o mem.o memchunk.o strutil.o xmlnode.o
 
 # -------------------------------------------------------------
 
