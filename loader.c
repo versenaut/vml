@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "dynstr.h"
+#include "hash.h"
 #include "list.h"
 #include "mem.h"
 #include "xmlnode.h"
@@ -41,6 +42,14 @@ typedef struct
 	char		name[32];
 	VLayerID	id;	/* ~0 until callback. */
 } LayerID;
+
+typedef struct {
+	boolean		visited;
+	boolean		circular;
+	unsigned int	count;
+	const char	*id;		/* Points at value of xmlnode's "id" attribute. */
+	XmlNode		*node;
+} LinkInfo;
 
 typedef struct
 {
@@ -1435,7 +1444,7 @@ static void step(MainInfo *min)
 		if(min->type == V_NT_OBJECT && min->skip_objects)
 		{
 			min->iter = xmlnode_iter_next(min->iter, here);
-			message(min, 3, " skipping object\n");
+			message(min, 3, " skipping object %s\n", xmlnode_attrib_get_value(min->node, "id"));
 			return;
 		}
 		else if(min->type != V_NT_OBJECT && !min->skip_objects)
@@ -1722,13 +1731,135 @@ static int cmp_node(const void *a, const void *b)
 	return pa < pb ? -1 : pa > pb;
 }
 
+static int is_object(const void *listdata, const void *data)
+{
+	return xmlnode_get_name(listdata)[4 + 1] != 'o';	/* Returns 0 when 'o' is found, as needed. */
+}
+
+static int linkinfo_equal(const void *key1, const void *key2)
+{
+	return strcmp(key1, key2) == 0;
+}
+
+static int linkinfo_clear_visited(void *data, void *user)
+{
+	LinkInfo	*li = (LinkInfo *) data;
+
+	li->visited = FALSE;
+	return 1;
+}
+
+static void follow_links(const Hash *objects, LinkInfo *li)
+{
+	List	*links, *iter;
+
+	if(li->visited)
+	{
+		printf("circular stuff found\n");
+		li->circular = TRUE;
+		return;
+	}
+	li->visited = TRUE;
+	li->count++;
+	links = xmlnode_nodeset_get(li->node, XMLNODE_AXIS_CHILD, XMLNODE_NAME("links"), XMLNODE_AXIS_CHILD, XMLNODE_NAME("link"), XMLNODE_ATTRIB_VAL("label", "child"), XMLNODE_DONE);
+	for(iter = links; iter != NULL; iter = list_next(iter))
+	{
+		const char	*node = xmlnode_attrib_get_value(list_data(iter), "node");
+		LinkInfo	*child = hash_lookup(objects, node);
+
+		if(child != NULL)
+			follow_links(objects, child);
+	}
+	list_destroy(links);
+}
+
+/* Store data from hash table into flat array. */
+static int linkinfo_store(void *data, void *user)
+{
+	LinkInfo	***pptr = user, **ptr = *pptr;
+
+	*ptr++ = data;
+	*pptr = ptr;
+	return 1;
+}
+
+static int cmp_linkinfo_ref(const void *a, const void *b)
+{
+	const LinkInfo	**la = (const LinkInfo **) a, **lb = (const LinkInfo **) b;
+
+	return -((*la)->count < (*lb)->count ? -1 : (*la)->count > (*lb)->count);
+}
+
+static List * linkinfo_collect(const Hash *hash)
+{
+	size_t		num = hash_size(hash), i;
+	LinkInfo	**sort, **put;
+	List		*objsort = NULL;
+
+	put = sort = malloc(sizeof *sort * num);
+	hash_foreach(hash, linkinfo_store, &put);
+	qsort(sort, num, sizeof *sort, cmp_linkinfo_ref);
+	for(i = 0; i < num; i++)
+		objsort = list_prepend(objsort, sort[i]->node);
+	objsort = list_reverse(objsort);
+
+	return objsort;
+}
+
 static List * file_begin(MainInfo *min)
 {
-	List	*list, *iter, *sorted = NULL;
+	List	*list, *iter, *sorted = NULL, *obj0, *objsort = NULL;
+	Hash	*obj;
 
 	list = xmlnode_nodeset_get(list_data(min->files), XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("node"), XMLNODE_DONE);
 	for(iter = list; iter != NULL; iter = list_next(iter))
 		sorted = list_insert_sorted(sorted, list_data(iter), cmp_node);
+	/* At this point, we have the list containing all the nodes. The object nodes form the tail.
+	 * We need to re-sort that sub-part of the list, so that the objects end up sorted based on
+	 * child relationships, as well. Deep stuff.
+	*/
+	obj0 = list_find_custom(sorted, NULL, is_object);
+	sorted = list_split(sorted, obj0);
+	/* Now, we have the non-object nodes in the sorted order in 'sorted', and obj0 points at
+	 * the first object. We need to create a new list of objects, sorted with respect to the
+	 * links and stuff. The algorithm here is simply: recurse through all links, and each time
+	 * a node is reached, increase a counter in that node. Then sort on the final count value.
+	 */
+	obj = hash_new(hash_hash_string, linkinfo_equal);
+	for(iter = obj0; iter != NULL; iter = list_next(iter))
+	{
+		LinkInfo	*li = malloc(sizeof *li);
+
+		li->visited = FALSE;
+		li->circular = FALSE;
+		li->count = 0u;
+		li->id = xmlnode_attrib_get_value(list_data(iter), "id");
+		li->node = list_data(iter);
+		hash_insert(obj, li->id, li);
+	}
+	/* Now, we have a hash with all objects in it, keyed on the XML ID ("n1", "n2" etc.). We
+	 * can traverse the objects in any order, and just follow the links in each node. The order
+	 * chosen is the one the nodes are already in, for simplicity.
+	*/
+	for(iter = obj0; iter != NULL; iter = list_next(iter))
+	{
+		LinkInfo	*li = hash_lookup(obj, xmlnode_attrib_get_value(list_data(iter), "id"));
+
+		hash_foreach(obj, linkinfo_clear_visited, NULL);
+		if(li != NULL)
+			follow_links(obj, li);
+	}
+	/* Now, all links should have been recursively followed. Time to extract the data from the
+	 * hash table, and use it to build a new list sorted on the "depth" of each node (deepest first).
+	 * This is a bit involved, since the data we want to compare is not the same as the data we want
+	 * to build the list out of.
+	*/
+	objsort = linkinfo_collect(obj);
+	
+	/* Link the two lists back together. */
+	sorted = list_concat(sorted, objsort);
+	/* And throw out the old objects-only tail. */
+ 	list_destroy(obj0);
 	return sorted;
 }
 
@@ -1810,7 +1941,6 @@ static void sort_nodes(MainInfo *min)
 			list_concat(last, elems);
 		last = list_last(elems);
 	}
-
 	list_destroy(sorted);
 	min->iter = min->file_nodes;
 }
@@ -1822,6 +1952,7 @@ int main(int argc, char *argv[])
 	MainInfo	min;
 	const char	*server = "localhost";
 
+	hash_init();
 	list_init();
 
 	min.files = NULL;
