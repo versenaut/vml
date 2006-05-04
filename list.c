@@ -188,6 +188,21 @@ List * list_unlink(List *list, List *element)
 	return list;
 }
 
+List * list_split(List *list, List *element)
+{
+	if(list == NULL)
+		return NULL;
+	if(element == NULL)
+		return list;
+	if(element->prev == NULL)
+		return NULL;
+	if(list->next == NULL)
+		return NULL;
+	element->prev->next = NULL;
+	element->prev = NULL;
+	return list;
+}
+
 List * list_tail(List *list)
 {
 	List	*head;
