@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+
+<vml version="1.0">
+
+<node-object id="n1" name="body">
+ <transform>
+  <rotation>0.0 0.354 0.0 0.920</rotation>
+ </transform>
+ <links>
+  <link node="n9" label="geometry" target="0"/>
+  <link node="n2" label="child" target="4294967295"/>
+  <link node="n3" label="child" target="4294967295"/>
+  <link node="n4" label="child" target="4294967295"/>
+  <link node="n5" label="child" target="4294967295"/>
+ </links>
+</node-object>
+
+<node-object id="n2" name="wheel-fl">
+ <transform>
+  <position>-1.5 0.0 -2</position>
+ </transform>
+ <links>
+  <link node="n10" label="geometry" target="0"/>
+ </links>
+</node-object>
+
+<node-object id="n3" name="wheel-fr">
+ <transform>
+  <position>1.5 0.0 -2</position>
+ </transform>
+ <links>
+  <link node="n10" label="geometry" target="0"/>
+ </links>
+</node-object>
+
+<node-object id="n4" name="wheel-br">
+ <transform>
+  <position>1.5 0.0 2</position>
+ </transform>
+ <links>
+  <link node="n10" label="geometry" target="0"/>
+ </links>
+</node-object>
+
+<node-object id="n5" name="wheel-bl">
+ <transform>
+  <position>-1.5 0.0 2</position>
+ </transform>
+ <links>
+  <link node="n10" label="geometry" target="0"/>
+ </links>
+</node-object>
+
+<node-geometry id="n10" name="body">
+ <layers>
+  <layer-vertex-xyz name="vertex">
+   <v>0 -0.500000 0.500000 -0.500000</v>
+   <v>1 0.500000 0.500000 -0.500000</v>
+   <v>2 -0.500000 0.500000 0.500000</v>
+   <v>3 0.500000 0.500000 0.500000</v>
+   <v>4 -0.500000 -0.5.000000 -0.500000</v>
+   <v>5 0.500000 -0.500000 -0.500000</v>
+
+   <v>6 -0.500000 -0.500000 0.500000</v>
+   <v>7 0.500000 -0.5000000 0.500000</v>
+  </layer-vertex-xyz>
+  <layer-polygon-corner-uint32 name="polygon">
+   <p>0 1 3 2</p>
+   <p>5 4 6 7</p>
+   <p>2 3 7 6</p>
+   <p>0 4 5 1</p>
+   <p>0 2 6 4</p>
+   <p>3 1 5 7</p>
+  </layer-polygon-corner-uint32>
+ </layers>
+ <vertexcrease layer="" default="4294967295"/>
+ <edgecrease layer="" default="4294967295"/>
+</node-geometry>
+
+<node-geometry id="n9" name="body"> <!-- car body geometry -->
+ <layers>
+  <layer-vertex-xyz name="vertex">
+   <v>0 -1.00000 0.100000 -2.500000</v>
+   <v>1 1.00000 0.100000 -2.500000</v>
+   <v>2 -1.00000 0.100000 2.500000</v>
+   <v>3 1.00000 0.100000 2.500000</v>
+   <v>4 -1.00000 -0.1000000 -2.500000</v>
+   <v>5 1.00000 -0.100000 -2.500000</v>
+   <v>6 -1.00000 -0.100000 2.500000</v>
+   <v>7 1.00000 -0.1000000 2.500000</v>
+  </layer-vertex-xyz>
+  <layer-polygon-corner-uint32 name="polygon">
+   <p>0 1 3 2</p>
+   <p>5 4 6 7</p>
+   <p>2 3 7 6</p>
+   <p>0 4 5 1</p>
+   <p>0 2 6 4</p>
+   <p>3 1 5 7</p>
+  </layer-polygon-corner-uint32>
+ </layers>
+ <vertexcrease layer="" default="4294967295"/>
+ <edgecrease layer="" default="4294967295"/>
+</node-geometry>
+
+<node-geometry id="n10" name="wheel">
+ <layers>
+  <layer-vertex-xyz name="vertex">
+   <v>0 -0.500000 0.500000 -0.500000</v>
+   <v>1 0.500000 0.500000 -0.500000</v>
+   <v>2 -0.500000 0.500000 0.500000</v>
+   <v>3 0.500000 0.500000 0.500000</v>
+   <v>4 -0.500000 -0.5000000 -0.500000</v>
+   <v>5 0.500000 -0.500000 -0.500000</v>
+   <v>6 -0.500000 -0.500000 0.500000</v>
+   <v>7 0.500000 -0.5000000 0.500000</v>
+  </layer-vertex-xyz>
+  <layer-polygon-corner-uint32 name="polygon">
+   <p>0 1 3 2</p>
+   <p>5 4 6 7</p>
+   <p>2 3 7 6</p>
+   <p>0 4 5 1</p>
+   <p>0 2 6 4</p>
+   <p>3 1 5 7</p>
+  </layer-polygon-corner-uint32>
+ </layers>
+ <vertexcrease layer="" default="4294967295"/>
+ <edgecrease layer="" default="4294967295"/>
+</node-geometry>
+
+</vml>
