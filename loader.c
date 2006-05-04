@@ -1902,7 +1902,7 @@ static XmlNode * load(const char *filename)
 				fclose(in);
 				return NULL;
 			}
-			text = dynstr_new_sized(size + 1);
+			text = dynstr_new_sized(size);
 		}
 		else
 		{
