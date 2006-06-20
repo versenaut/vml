@@ -517,6 +517,7 @@ static int process_object(MainInfo *min)
 			{
 				const char	*label = xmlnode_attrib_get_value(l, "label");
 
+				message(min, 3, "Sending link_set from node %u to node n%u (%u), label '%s'\n", min->node_id, ln, min->node_map[ln], label);
 				verse_send_o_link_set(min->node_id, id, min->node_map[ln], label, target);
 				id++;
 			}
@@ -869,7 +870,8 @@ static void fragment_clear(VNMFragmentType type, VMatFrag *f)
 		break;
 	case VN_M_FT_RAMP:
 		f->ramp.mapping = ~0;
-		f->ramp.point_count = 0;
+		f->ramp.point_count = 1;
+		f->ramp.ramp[0].red = f->ramp.ramp[0].green = f->ramp.ramp[0].blue = f->ramp.ramp[0].pos = 0.0;
 		break;
 	case VN_M_FT_OUTPUT:
 		f->output.label[0] = '\0';
@@ -905,6 +907,12 @@ static int fragment_set(const MainInfo *min, VNMFragmentType type, VMatFrag *f, 
 	case VN_M_FT_TRANSPARENCY:
 		f->transparency.normal_falloff   = child_get_real64(frag, "normal_falloff", 0.0);
 		f->transparency.refraction_index = child_get_real64(frag, "refraction_index", 0.0);
+		break;
+	case VN_M_FT_VOLUME:
+		f->volume.diffusion = child_get_real64(frag, "diffusion", 0.0);
+		v = xmlnode_eval_single(frag, "col");
+		sscanf(v, "%lg %lg %lg", &f->volume.col_r, &f->volume.col_g, &f->volume.col_b);
+		f->volume.color = fragment_map_get(min, child_get_ref(frag, "color", 'f', ~0u));
 		break;
 	case VN_M_FT_GEOMETRY:
 		child_get_string(f->geometry.layer_r, sizeof f->geometry.layer_r, frag, "layer_r");
