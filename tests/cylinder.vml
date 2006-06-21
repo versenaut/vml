@@ -56,4 +56,14 @@
 	<edgecrease layer="crease"/>
 </node-geometry>
 
+<!-- Here's a light source, to make the cylinder more easily viewable. -->
+<node-object id="n3" name="light">
+        <transform>
+                <position>0.0 1.5 1.0</position>
+                <rotation>0.0 0.0 0.0 1.0</rotation>
+                <scale>1.0 1.0 1.0</scale>
+        </transform>
+        <light>1.0 1.0 1.0</light>
+</node-object>
+
 </vml>
