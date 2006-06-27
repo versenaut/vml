@@ -75,8 +75,8 @@ VNMFragmentType m_fragment_type_from_string(const char *str)
 #define	FT(n, t)	{ n, VN_M_FT_##t }
 	const Entry map[] = {
 		FT("color", COLOR), FT("light", LIGHT), FT("reflection", REFLECTION),
-		FT("transparency", TRANSPARENCY), FT("volume", VOLUME), FT("geometry", GEOMETRY), FT("texture", TEXTURE), FT("noise", NOISE),
-		FT("blender", BLENDER), FT("matrix", MATRIX), FT("ramp", RAMP), FT("animation", ANIMATION),
+		FT("transparency", TRANSPARENCY), FT("volume", VOLUME), FT("view", VIEW), FT("geometry", GEOMETRY), FT("texture", TEXTURE), FT("noise", NOISE),
+		FT("blender", BLENDER), FT("clamp", CLAMP), FT("matrix", MATRIX), FT("ramp", RAMP), FT("animation", ANIMATION),
 		FT("alternative", ALTERNATIVE), FT("output", OUTPUT)
 	};
 	return lookup(map, sizeof map / sizeof *map, str);
@@ -97,7 +97,7 @@ VNMLightType m_light_type_from_string(const char *str)
 VNMNoiseType m_noise_type_from_string(const char *str)
 {
 #define	NT(n)	{ "VN_M_NOISE_" #n, VN_M_NOISE_##n }
-	const Entry	map[] = { NT(PERLIN_ZERO_TO_ONE), NT(PERLIN_MINUS_ONE_TO_ONE) };
+	const Entry	map[] = { NT(PERLIN_ZERO_TO_ONE), NT(PERLIN_MINUS_ONE_TO_ONE), NT(POINT_ZERO_TO_ONE), NT(POINT_MINUS_ONE_TO_ONE)};
 	return lookup(map, sizeof map / sizeof *map, str);
 #undef NT
 }
@@ -106,7 +106,7 @@ VNMBlendType m_blend_type_from_string(const char *str)
 {
 #define	BT(n)	{ "VN_M_BLEND_" #n, VN_M_BLEND_##n }
 	const Entry	map[] = {
-		BT(FADE), BT(ADD), BT(SUBTRACT), BT(MULTIPLY), BT(DIVIDE), BT(DOT)
+		BT(FADE), BT(ADD), BT(SUBTRACT), BT(MULTIPLY), BT(DIVIDE),
 	};
 	return lookup(map, sizeof map / sizeof *map, str);
 #undef BT

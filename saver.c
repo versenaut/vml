@@ -81,6 +81,9 @@ static void save_object(FILE *f, ENode *o_node)
 		}
 		fprintf(f, "\t</methodgroups>\n");
 	}
+
+	if(e_nso_get_hide(o_node))		/* Being visible is the default, so only emit <hidden> if needed. */
+		fprintf(f, "\t<hidden>true</hidden>\n");
 }
 
 static void save_geometry(FILE *f, ENode *g_node)
@@ -231,7 +234,7 @@ static void save_material(FILE *f, ENode *m_node)
 	static const char *ramp_type[] = {"VN_M_RAMP_SQUARE", "VN_M_RAMP_LINEAR", "VN_M_RAMP_SMOOTH"};
 	static const char *ramp_channel[] = {"VN_M_RAMP_RED", "VN_M_RAMP_GREEN", "VN_M_RAMP_BLUE"};
 	static const char *blend_type[] = {"VN_M_BLEND_FADE", "VN_M_BLEND_ADD", "VN_M_BLEND_SUBTRACT", "VN_M_BLEND_MULTIPLY", "VN_M_BLEND_DIVIDE", "VN_M_BLEND_DOT"};
-	static const char *frag_el[] = { "color", "light", "reflection", "transparency", "volume", "geometry", "texture", "noise", "blender", "matrix", "ramp", "animation", "alternative", "output" };
+	static const char *frag_el[] = { "color", "light", "reflection", "transparency", "volume", "view", "geometry", "texture", "noise", "blender", "clamp", "matrix", "ramp", "animation", "alternative", "output" };
 	VMatFrag *frag;
 	VNMFragmentID id;
 	uint i;
@@ -281,11 +284,11 @@ static void save_material(FILE *f, ENode *m_node)
 			case VN_M_FT_VOLUME :
 				fprintf(f,
 					"\t\t\t<diffusion>%f</diffusion>\n"
-					"\t\t\t<col>%f %f %f</col>\n"
-					"%s",
+					"\t\t\t<col>%f %f %f</col>\n",
 					frag->volume.diffusion,
-					frag->volume.col_r, frag->volume.col_g, frag->volume.col_b,
-					m_link_to_element("\t\t\t", "color", frag->volume.color));
+					frag->volume.col_r, frag->volume.col_g, frag->volume.col_b);					
+			break;
+			case VN_M_FT_VIEW :
 			break;
 			case VN_M_FT_GEOMETRY :
 				fprintf(f,
@@ -303,10 +306,12 @@ static void save_material(FILE *f, ENode *m_node)
 					"\t\t\t<layer_r>%s</layer_r>\n"
 					"\t\t\t<layer_g>%s</layer_g>\n"
 					"\t\t\t<layer_b>%s</layer_b>\n"
+					"\t\t\t<filtered>%s</filtered>\n"
 					"%s",
 					frag->texture.layer_r,
 					frag->texture.layer_g,
 					frag->texture.layer_b,
+					frag->texture.filtered ? "true" : "false",
 					m_link_to_element("\t\t\t", "mapping", frag->texture.mapping));
 			break;
 			case VN_M_FT_NOISE :
@@ -326,6 +331,15 @@ static void save_material(FILE *f, ENode *m_node)
 					m_link_to_element("\t\t\t", "data_a", frag->blender.data_a),
 					m_link_to_element("\t\t\t", "data_b", frag->blender.data_b),
 					m_link_to_element("\t\t\t", "control", frag->blender.control));
+			break;
+			case VN_M_FT_CLAMP:
+				fprintf(f,
+					"\t\t\t<min>%s</min>\n"
+					"\t\t\t<col>%f %f %f</col>\n"
+					"%s",
+					frag->clamp.min ? "true" : "false",
+					frag->clamp.red, frag->clamp.green, frag->clamp.blue,
+					m_link_to_element("\t\t\t", "data", frag->clamp.data));
 			break;
 			case VN_M_FT_MATRIX :
 					fprintf(f, "%s", m_link_to_element("\t\t\t", "data", frag->matrix.data));

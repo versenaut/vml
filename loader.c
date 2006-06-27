@@ -336,6 +336,11 @@ static uint32 child_get_ref(const XmlNode *node, const char *name, char prefix, 
 	return def;
 }
 
+static boolean get_boolean(const char *b)
+{
+	return b != NULL && (strcmp(b, "1") == 0 || strcmp(b, "true") == 0);
+}
+
 static int process_common(MainInfo *min)
 {
 	const XmlNode	*here = list_data(min->iter);
@@ -374,7 +379,7 @@ static int process_common(MainInfo *min)
 
 				if(strcmp(type, "boolean") == 0)
 				{
-					tag.vboolean = (strcmp(value, "true") == 0) || (strcmp(value, "1") == 0);
+					tag.vboolean = get_boolean(value);
 					verse_send_tag_create(min->node_id, id, ~0, name, VN_TAG_BOOLEAN, &tag);
 				}
 				else if(strcmp(type, "uint32") == 0)
@@ -580,6 +585,15 @@ static int process_object(MainInfo *min)
 			}
 		}
 		list_destroy(methods);
+		min->iter = xmlnode_iter_next(min->iter, here);
+	}
+	else if(strcmp(el, "hidden") == 0)
+	{
+		if((txt = xmlnode_eval_single(here, "")) != NULL)
+		{
+			if(strcmp(txt, "true") == 0 || strcmp(txt, "1") == 0)
+				verse_send_o_hide(min->node_id, TRUE);
+		}
 		min->iter = xmlnode_iter_next(min->iter, here);
 	}
 	else
@@ -911,8 +925,9 @@ static int fragment_set(const MainInfo *min, VNMFragmentType type, VMatFrag *f, 
 	case VN_M_FT_VOLUME:
 		f->volume.diffusion = child_get_real64(frag, "diffusion", 0.0);
 		v = xmlnode_eval_single(frag, "col");
-		sscanf(v, "%lg %lg %lg", &f->volume.col_r, &f->volume.col_g, &f->volume.col_b);
-		f->volume.color = fragment_map_get(min, child_get_ref(frag, "color", 'f', ~0u));
+		return sscanf(v, "%lg %lg %lg", &f->volume.col_r, &f->volume.col_g, &f->volume.col_b) == 3;
+	case VN_M_FT_VIEW:
+		/* Nothing to do here, view fragment doesn't have any fields. */
 		break;
 	case VN_M_FT_GEOMETRY:
 		child_get_string(f->geometry.layer_r, sizeof f->geometry.layer_r, frag, "layer_r");
@@ -924,6 +939,7 @@ static int fragment_set(const MainInfo *min, VNMFragmentType type, VMatFrag *f, 
 		child_get_string(f->texture.layer_r, sizeof f->texture.layer_r, frag, "layer_r");
 		child_get_string(f->texture.layer_g, sizeof f->texture.layer_g, frag, "layer_g");
 		child_get_string(f->texture.layer_b, sizeof f->texture.layer_b, frag, "layer_b");
+		f->texture.filtered = get_boolean(xmlnode_eval_single(frag, "filtered"));
 		f->texture.mapping = fragment_map_get(min, child_get_ref(frag, "mapping", 'f', ~0u));
 		break;
 	case VN_M_FT_NOISE:
@@ -936,6 +952,12 @@ static int fragment_set(const MainInfo *min, VNMFragmentType type, VMatFrag *f, 
 		f->blender.data_b  = fragment_map_get(min, child_get_ref(frag, "data_b", 'f', ~0u));
 		f->blender.control = fragment_map_get(min, child_get_ref(frag, "control", 'f', ~0u));
 		break;
+	case VN_M_FT_CLAMP:
+		f->clamp.min = get_boolean(xmlnode_eval_single(frag, "min"));
+		f->clamp.data = fragment_map_get(min, child_get_ref(frag, "data", 'f', ~0u));
+		return sscanf(xmlnode_eval_single(frag, "col"),
+			      "%lg %lg %lg",
+			      &f->clamp.red, &f->clamp.green, &f->clamp.blue) == 3;
 	case VN_M_FT_MATRIX:
 		f->matrix.data = fragment_map_get(min, child_get_ref(frag, "data", 'f', ~0u));
 		return sscanf(xmlnode_eval_single(frag, "matrix"),
