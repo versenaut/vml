@@ -1,5 +1,7 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
+<META http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 <style type="text/css">
 
 h1.title {
@@ -89,6 +91,7 @@ and running the actual client as quickly as possible.
 <p>
 The following files are part of the Purple codebase (the extension ".[ch]" means that there
 is both an implementation and a header file with the indicated base name):
+</p>
 <dl>
 <dt><code>dynstr.[ch]</code></dt>	<dd>Dynamic (growable) strings.</dd>
 <dt><code>list.[ch]</code></dt>	<dd>Doubly linked list.</dd>
@@ -98,7 +101,6 @@ is both an implementation and a header file with the indicated base name):
 <dt><code>strutil.[ch]</code></dt>	<dd>Various string utility functions.</dd>
 <dt><code>xmlnode.[ch]</code></dt>	<dd>Simple XML parser.</dd>
 </dl>
-</p>
 <p>
 If possible in your environment, it might be a good idea to check out
 the entire Purple module in a separate directory, and replace the above
@@ -137,6 +139,7 @@ To upload the file <tt>test.vml</tt>, created by the saver above, one would issu
 command like this:
 <pre class="shell">~> ./loader -ip=verse.example.org:4711 test.vml
 </pre>
+<p>
 The <tt>-ip=</tt> option is used to set the IP address of the target Verse server. The port
 number is optional, if omitted the default Verse port is used. All other arguments are assumed
 to be filenames of VML files, which will be uploaded individually.
