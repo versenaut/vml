@@ -1,0 +1,146 @@
+<html>
+<head>
+<style type="text/css">
+
+h1.title {
+text-align: center;
+}
+
+p.author {
+text-align: center;
+}
+
+pre.shell {
+background-color: #ddddff;
+border-color: black;
+padding: .5em;
+border-style: solid;
+border-color: black;
+border-width: thin;
+}
+</style>
+
+<title>About the VML Tools</title>
+</head>
+
+<body>
+<h1 class="title">
+About the VML Tools
+</h1>
+<p class="author">
+Author: Emil Brink, PDC, KTH 2006. For <a href="http://www.uni-verse.org/">Uni-Verse</a>.
+</p>
+
+<h1>Introduction</h1>
+<p>
+This text briefly describes the "saver" and "loader" Verse clients.
+The purpose of these programs is to create and use disk files holding
+Verse content, in textual format. This format, called VML ("Verse
+Modelling Language"), is based on XML.
+</p>
+<p>
+The tools were written in parallel by two authors; the saver by Eskil
+Steenberg and the loader by Emil Brink. They are collected here since
+they are functionally very related, and one is not very useful without
+the other.
+</p>
+
+<h1>Licensing</h1>
+<p>
+Licensing for these applications is like this: the loader code, since
+it depends on the GPL code from Purple, must be GPL too. The saver,
+which uses only the Enough and Verse libraries (both BSD) is BSD. The
+license texts are in COPYING.loader
+</p>
+
+<h1>Dependencies</h1>
+<p>
+This section talks about the dependencies for the two tools. It is <strong>only</strong> of
+interest to people who want to compile the tools from scratch. If you have pre-compiled
+("binary") versions of the tools already at hand, feel free to ignore this whole section.
+</p>
+<p>
+Technically, the tools are widely different, owing to their different authors but also to
+the different functionality.
+</p>
+<p>
+Both tools naturally depend on Verse at the core; to build either, you
+will need to have the header ("verse.h") and library ("libverse.a" on
+Linux systems) in a location indicated by the VERSE variable in the Makefile.
+</p>
+
+<h2>Saver Dependencies</h2>
+<p>
+The saver depends on the "Enough" Verse data storage library, which is
+also by Eskil. It is available in the "quelsolaar" CVS module, please
+look it up if you do not already have it. The Makefile will need to
+be edited to point to a location for the required header and library
+files.
+</p>
+<h2>Loader Dependencies</h2>
+<p>
+The loader, on the other hand, depends on the general-purpose utility
+code developed for the <a href="http://purple.blender.org/">Purple</a> scripting
+environment. This is another Verse project, and is in the "purple"
+<a href="http://projects.blender.org/viewcvs/viewcvs.cgi/purple/?cvsroot=verse">CVS module</a>.
+Purple is here simply used as a source of fairly well-tested, basic utility code, to get up
+and running the actual client as quickly as possible.
+</p>
+<p>
+The following files are part of the Purple codebase (the extension ".[ch]" means that there
+is both an implementation and a header file with the indicated base name):
+<dl>
+<dt><code>dynstr.[ch]</code></dt>	<dd>Dynamic (growable) strings.</dd>
+<dt><code>list.[ch]</code></dt>	<dd>Doubly linked list.</dd>
+<dt><code>log.[ch]</code></dt>	<dd>Basic error/warning logging.</dd>
+<dt><code>mem.[ch]</code></dt>	<dd>Memory allocation.</dd>
+<dt><code>memchunk.[ch]</code></dt>	<dd>Chunked memory allocation.</dd>
+<dt><code>strutil.[ch]</code></dt>	<dd>Various string utility functions.</dd>
+<dt><code>xmlnode.[ch]</code></dt>	<dd>Simple XML parser.</dd>
+</dl>
+</p>
+<p>
+If possible in your environment, it might be a good idea to check out
+the entire Purple module in a separate directory, and replace the above
+files with symbolic links into Purple. That way, you will only have one
+version of each of the shared files, and any updates (which are likely
+to happen to the Purple side first, perhaps exclusively) will not be
+missed. You can do this by editing the Makefile variable PURPLE to point
+at your local copy of the Purple code, and then doing "make purplelink"
+to replace the files with symbolic links to Purple.
+</p>
+<p>
+Building the loader is easy, as illustrated by the included Makefile.
+</p>
+
+<h1>Usage</h1>
+<p>
+Once you have the tools built, using them is simple.
+</p>
+
+<h2>Using the Saver</h2>
+<p>
+The saver is typically called from a command line, like this:
+</p>
+<pre class="shell">~> ./saver -1 -i 30 -f test.vml
+</pre>
+<p>
+This will save the file only once and then exit (the "-1 option"), after
+first waiting 30 seconds for data to download (the "-i 30"). The file will
+be named <tt>test.vml</tt>, as indicated by the "-f test.vml" option. There are
+other options, give it a "-h" option to display them.
+</p>
+
+<h2>Using the Loader</h2>
+<p>
+To upload the file <tt>test.vml</tt>, created by the saver above, one would issue a
+command like this:
+<pre class="shell">~> ./loader -ip=verse.example.org:4711 test.vml
+</pre>
+The <tt>-ip=</tt> option is used to set the IP address of the target Verse server. The port
+number is optional, if omitted the default Verse port is used. All other arguments are assumed
+to be filenames of VML files, which will be uploaded individually.
+</p>
+</body>
+</html>
+
