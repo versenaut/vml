@@ -89,7 +89,7 @@ static void save_object(FILE *f, ENode *o_node)
 static void save_geometry(FILE *f, ENode *g_node)
 {
 	static const char *layer_el[] = { "vertex-xyz", "vertex-uint32", "vertex-real",
-		"polygon-corner-uint32", "polygon-corner-real", "polygon_face_uint8",
+		"polygon-corner-uint32", "polygon-corner-real", "polygon-face-uint8",
 		"polygon-face-uint32", "polygon-face-real" };
 	const char	*lt;
 	EGeoLayer *layer;
