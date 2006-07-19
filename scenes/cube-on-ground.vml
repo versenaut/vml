@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="latin1"?>
+
+<vml version="1.0">
+
+<node-object id="n4" name="cube">
+	<transform>
+		<position>0.000000 0.000000 0.000000</position>
+		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
+		<scale>1.000000 1.000000 1.000000</scale>
+	</transform>
+	<links>
+		<link node="n1" label="geometry" target="0"/>
+		<link node="n2" label="material" target="0"/>
+	</links>
+</node-object>
+
+<node-object id="n5" name="light">
+	<transform>
+		<position>0.000000 1.580951 -0.552381</position>
+		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
+		<scale>1.000000 1.000000 1.000000</scale>
+	</transform>
+	<light>
+		2.857143 2.857143 2.819048
+	</light>
+</node-object>
+
+<node-object id="n6" name="ground">
+	<transform>
+		<position>0.000000 -0.476191 0.000000</position>
+		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
+		<scale>5.028571 0.038095 5.066667</scale>
+	</transform>
+	<links>
+		<link node="n1" label="geometry" target="0"/>
+		<link node="n7" label="material" target="0"/>
+	</links>
+</node-object>
+
+<node-geometry id="n1" name="cube-geo">
+	<layers>
+		<layer-vertex-xyz name="vertex">
+			<v>1 0.412426 0.441560 0.473721</v>
+			<v>2 -0.462229 0.441560 0.473721</v>
+			<v>3 0.412426 -0.426649 0.473721</v>
+			<v>4 -0.408955 -0.426649 0.473721</v>
+			<v>5 0.412426 0.441560 -0.385914</v>
+			<v>6 0.412426 -0.441560 -0.385914</v>
+			<v>7 -0.453053 0.441560 -0.372400</v>
+			<v>8 -0.413466 -0.441560 -0.385914</v>
+		</layer-vertex-xyz>
+		<layer-polygon-corner-uint32 name="polygon">
+			<p>4 2 1 3</p>
+			<p>5 6 3 1</p>
+			<p>7 5 1 2</p>
+			<p>5 7 8 6</p>
+			<p>8 4 3 6</p>
+			<p>2 4 8 7</p>
+		</layer-polygon-corner-uint32>
+		<layer-polygon-corner-uint32 name="crease">
+			<p>4294967295 4294967295 4294967295 4294967295</p>
+			<p>4294967295 4294967295 4294967295 4294967295</p>
+			<p>4294967295 4294967295 4294967295 4294967295</p>
+			<p>4294967295 4294967295 4294967295 4294967295</p>
+			<p>4294967295 4294967295 4294967295 4294967295</p>
+			<p>4294967295 4294967295 4294967295 4294967295</p>
+		</layer-polygon-corner-uint32>
+		<layer-vertex-real name="select">
+			<v>1 0.000000</v>
+			<v>2 0.000000</v>
+			<v>3 0.000000</v>
+			<v>4 0.000000</v>
+			<v>5 0.000000</v>
+			<v>6 0.000000</v>
+			<v>7 0.000000</v>
+			<v>8 0.000000</v>
+		</layer-vertex-real>
+	</layers>
+	<vertexcrease layer="" default="0"/>
+	<edgecrease layer="crease" default="0"/>
+</node-geometry>
+
+<node-material id="n2" name="Material_Node_3">
+	<fragments>
+		<fragment-output id="f0">
+			<label>color</label>
+			<front>f1</front>
+		</fragment-output>
+		<fragment-blender id="f1">
+			<type>VN_M_BLEND_MULTIPLY</type>
+			<data_a>f2</data_a>
+			<data_b>f3</data_b>
+		</fragment-blender>
+		<fragment-color id="f2">
+			<color>0.455555 0.144444 0.622222</color>
+		</fragment-color>
+		<fragment-light id="f3">
+			<type>VN_M_LIGHT_DIRECT_AND_AMBIENT</type>
+			<normal_falloff>0.000000</normal_falloff>
+		</fragment-light>
+	</fragments>
+</node-material>
+
+<node-material id="n7" name="Material_Node_7">
+	<fragments>
+		<fragment-output id="f0">
+			<label>color</label>
+			<front>f3</front>
+		</fragment-output>
+		<fragment-color id="f1">
+			<color>0.500000 0.500000 0.555556</color>
+		</fragment-color>
+		<fragment-light id="f2">
+			<type>VN_M_LIGHT_DIRECT_AND_AMBIENT</type>
+			<normal_falloff>0.000000</normal_falloff>
+		</fragment-light>
+		<fragment-blender id="f3">
+			<type>VN_M_BLEND_MULTIPLY</type>
+			<data_a>f1</data_a>
+			<data_b>f2</data_b>
+		</fragment-blender>
+	</fragments>
+</node-material>
+
+</vml>
