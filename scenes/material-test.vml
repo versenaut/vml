@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="latin1"?>
+%<?xml version="1.0" encoding="latin1"?>
 
 <vml version="1.0">
 
@@ -17,8 +17,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n7" label="my_link" target="0"/>
-		<link node="n2" label="my_link" target="0"/>
+		<link node="n7" label="material" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
 	</links>
 </node-object>
 
@@ -37,8 +37,8 @@
 		<scale>10.000000 10.000000 10.000000</scale>
 	</transform>
 	<links>
-		<link node="n3" label="my_link" target="0"/>
-		<link node="n5" label="my_link" target="0"/>
+		<link node="n3" label="geometry" target="0"/>
+		<link node="n5" label="material" target="0"/>
 	</links>
 </node-object>
 
@@ -49,8 +49,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n2" label="my_link" target="0"/>
-		<link node="n14" label="my_link" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
+		<link node="n14" label="material" target="0"/>
 	</links>
 </node-object>
 
@@ -72,8 +72,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n2" label="my_link" target="0"/>
-		<link node="n4" label="my_link" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
+		<link node="n4" label="material" target="0"/>
 	</links>
 </node-object>
 
@@ -84,8 +84,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n12" label="my_link" target="0"/>
-		<link node="n2" label="my_link" target="0"/>
+		<link node="n12" label="material" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
 	</links>
 </node-object>
 
@@ -96,8 +96,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n2" label="my_link" target="0"/>
-		<link node="n8" label="my_link" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
+		<link node="n8" label="material" target="0"/>
 	</links>
 </node-object>
 
@@ -108,8 +108,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n15" label="my_link" target="0"/>
-		<link node="n2" label="my_link" target="0"/>
+		<link node="n15" label="material" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
 	</links>
 </node-object>
 
@@ -120,8 +120,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n2" label="my_link" target="0"/>
-		<link node="n9" label="my_link" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
+		<link node="n9" label="material" target="0"/>
 	</links>
 </node-object>
 
@@ -132,8 +132,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n2" label="my_link" target="0"/>
-		<link node="n6" label="my_link" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
+		<link node="n6" label="material" target="0"/>
 	</links>
 </node-object>
 
@@ -144,8 +144,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n2" label="my_link" target="0"/>
-		<link node="n10" label="my_link" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
+		<link node="n10" label="material" target="0"/>
 	</links>
 </node-object>
 
@@ -156,8 +156,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n2" label="my_link" target="0"/>
-		<link node="n13" label="my_link" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
+		<link node="n13" label="material" target="0"/>
 	</links>
 </node-object>
 
@@ -176,8 +176,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n2" label="my_link" target="0"/>
-		<link node="n11" label="my_link" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
+		<link node="n11" label="material" target="0"/>
 	</links>
 </node-object>
 
@@ -196,8 +196,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n17" label="my_link" target="0"/>
-		<link node="n2" label="my_link" target="0"/>
+		<link node="n17" label="material" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
 	</links>
 </node-object>
 
@@ -216,8 +216,8 @@
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
 	<links>
-		<link node="n2" label="my_link" target="0"/>
-		<link node="n38" label="my_link" target="0"/>
+		<link node="n2" label="geometry" target="0"/>
+		<link node="n38" label="material" target="0"/>
 	</links>
 </node-object>
 
