@@ -2,14 +2,6 @@
 
 <vml version="1.0">
 
-<node-object id="n0" name="Object_Node_0">
-	<transform>
-		<position>0.000000 0.000000 0.000000</position>
-		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
-		<scale>1.000000 1.000000 1.000000</scale>
-	</transform>
-</node-object>
-
 <node-object id="n5" name="tvr-light">
 	<transform>
 		<position>0.000000 0.971429 0.000000</position>
