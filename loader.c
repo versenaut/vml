@@ -212,6 +212,15 @@ static void pend_sub(MainInfo *min)
 	min->pending = PEND_NONE;
 }
 
+static void node_map_clear(MainInfo *min)
+{
+	if(min->node_map != NULL)
+	{
+		min->node_map = NULL;
+	}
+	min->node_map_size = 0u;
+}
+
 static void node_map_set(MainInfo *min, VNodeID local, VNodeID remote)
 {
 	if(local >= min->node_map_size)
@@ -1840,8 +1849,8 @@ static List * file_begin(MainInfo *min)
 {
 	List	*list, *iter, *sorted = NULL, *obj0, *objsort = NULL;
 	Hash	*obj;
-
-	list = xmlnode_nodeset_get(list_data(min->files), XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("node"), XMLNODE_DONE);
+	
+	list = xmlnode_nodeset_get(list_data(min->file_iter), XMLNODE_AXIS_CHILD, XMLNODE_NAME_PREFIX("node"), XMLNODE_DONE);
 	for(iter = list; iter != NULL; iter = list_next(iter))
 		sorted = list_insert_sorted(sorted, list_data(iter), cmp_node);
 	/* At this point, we have the list containing all the nodes. The object nodes form the tail.
@@ -1957,6 +1966,7 @@ static XmlNode * load(const char *filename)
 static void sort_nodes(MainInfo *min)
 {
 	List	*sorted, *iter, *last = NULL;
+	uint32	cnt = 0;
 
 	min->file_nodes = NULL;
 	/* This loop avoids doing concat() from the head of the list, instead maintaining a last-pointer
@@ -1970,6 +1980,9 @@ static void sort_nodes(MainInfo *min)
 		else
 			list_concat(last, elems);
 		last = list_last(elems);
+		cnt++;
+		if(cnt % 500 == 0)
+			verse_callback_update(10);	/* Make the network breathe a little. */
 	}
 	list_destroy(sorted);
 	min->iter = min->file_nodes;
@@ -2054,7 +2067,7 @@ int main(int argc, char *argv[])
 	dict_ctor(&min.tag_groups);
 	dict_ctor(&min.layer_ids);
 
-	sort_nodes(&min);
+	min.file_iter = min.files;
 
 	verse_send_connect("loader", "<secret>", server, NULL);
 
@@ -2062,33 +2075,42 @@ int main(int argc, char *argv[])
 	while(min.avatar == ~0u)
 		verse_callback_update(10000);
 
-	/* Upload everything but objects. */
-	min.skip_objects = 1;
-	last_pend = -1;
-	last_count = -1;
-	message(&min, 1, "About to upload non-object nodes\n");
-	while(min.iter != NULL)
+	while(min.file_iter != NULL)
 	{
-		verse_callback_update(10000);
-		if(min.pending != last_pend || min.pend_count != last_count)
+		node_map_clear(&min);
+
+		sort_nodes(&min);	/* Scary. */
+
+		/* Upload everything but objects. */
+		min.skip_objects = 1;
+		last_pend = -1;
+		last_count = -1;
+		message(&min, 1, "About to upload non-object nodes\n");
+		while(min.iter != NULL)
 		{
-			last_pend = min.pending;
-			last_count = min.pend_count;
+			verse_callback_update(10000);
+			if(min.pending != last_pend || min.pend_count != last_count)
+			{
+				last_pend = min.pending;
+				last_count = min.pend_count;
+			}
+			if(min.pending == PEND_NONE && min.iter != NULL)
+				step(&min);
 		}
-		if(min.pending == PEND_NONE && min.iter != NULL)
-			step(&min);
+
+		/* Then iterate again, now over objects only. */
+		message(&min, 1, "Done, this would be a good time to upload the object nodes\n");
+		min.skip_objects = 0;
+		min.iter = min.file_nodes;
+		while(min.iter != NULL)
+		{
+			verse_callback_update(10000);
+			if(min.pending == PEND_NONE && min.iter != NULL)
+				step(&min);
+		}
+		min.file_iter = list_next(min.file_iter);
 	}
 
-	/* Then iterate again, now over objects only. */
-	message(&min, 1, "Done, this would be a good time to upload the object nodes\n");
-	min.skip_objects = 0;
-	min.iter = min.file_nodes;
-	while(min.iter != NULL)
-	{
-		verse_callback_update(10000);
-		if(min.pending == PEND_NONE && min.iter != NULL)
-			step(&min);
-	}
 	do
 	{
 		verse_callback_update(10000);
