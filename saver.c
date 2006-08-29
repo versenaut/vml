@@ -592,13 +592,40 @@ static void save_string(FILE *f, const char *p)
 	}
 }
 
-static void save_node(FILE *f, ENode *node)
+/* Check if the node is to be filtered out. Object nodes with no links, tags or
+ * light can be filtered. Returns 0 to filter the node out, 1 to include it.
+*/
+static int node_filter_test(const ENode *node)
+{
+	double	light[3];
+
+	if(node == NULL)
+		return 0;
+	if(e_ns_get_node_type(node) != V_NT_OBJECT)
+		return 1;
+	if(e_nso_get_next_link((ENode *) node, 0) != NULL)
+		return 1;
+	if(e_ns_get_next_tag_group((ENode *) node, 0) != (uint16) ~0)
+		return 1;
+	e_nso_get_light((ENode *) node, light);
+	if(light[0] != 0.0 || light[1] != 0.0 || light[2] != 0.0)
+		return 1;
+	return 0;
+}
+
+static void save_node(FILE *f, ENode *node, int filter)
 {
 	static const char *node_el[] = { "node-object", "node-geometry", "node-material", "node-bitmap", "node-text", "node-curve", "node-audio" };
 	static const char *tag_el[] = { "boolean", "uint32", "real64", "string", "real64-vec3", "link", "animation", "blob" };
 	uint16 group_id, tag_id;
 	uint i;
 	VNTag *tag;
+
+	if(filter && !node_filter_test(node))
+	{
+		printf("node %u (%s) filtered out\n", e_ns_get_node_id(node), e_ns_get_node_name(node));
+		return;
+	}
 
 	fprintf(f, "<%s id=\"n%u\" name=\"%s\">\n", node_el[e_ns_get_node_type(node)], e_ns_get_node_id(node), e_ns_get_node_name(node));
 	if(e_ns_get_next_tag_group(node, 0) != (uint16)-1)
@@ -681,7 +708,7 @@ static void save_node(FILE *f, ENode *node)
 	fprintf(f, "</%s>\n\n", node_el[e_ns_get_node_type(node)]);
 }
 
-static void save_data(FILE *f)
+static void save_data(FILE *f, int filter)
 {
 	ENode *node, *me = e_ns_get_node_avatar(0);
 	uint i;
@@ -694,7 +721,7 @@ static void save_data(FILE *f)
 		{
 			if(node == me)
 				continue;
-			save_node(f, node);
+			save_node(f, node, filter);
 		}
 	}
 	fprintf(f, "</vml>\n\n");
@@ -746,7 +773,7 @@ int main(int argc, char **argv)
 	uint32 i, seconds, s, interval;
 	const char *name, *pass, *address, *file, *tmp;
 	FILE *f;
-	int	repeat = 0;
+	int	repeat = 0, filter = 0;
 
 	enough_init();
 	name = find_param(argc, argv, "-n", "saver");
@@ -757,6 +784,7 @@ int main(int argc, char **argv)
 	tmp = find_param(argc, argv, "-i", "10");
 	if(tmp != NULL)
 		interval = strtoul(tmp, NULL, 10);
+	filter = find_param_single(argc, argv, "-l");
 
 	for(i = 1; i < argc; i++)
 	{
@@ -771,6 +799,7 @@ int main(int argc, char **argv)
 			printf("-f <filename>\n");
 			printf("-i <save interval in seconds>\n");
 			printf("-1 Save only once, then exit.\n");
+			printf("-l Filter out object nodes without links or tags\n");
 			return EXIT_SUCCESS;
 		}
 	}
@@ -797,7 +826,7 @@ int main(int argc, char **argv)
 		}
 		printf("Done waiting, beginning save\n");
 		if((f = fopen(file, "w")) != NULL)
-			save_data(f);
+			save_data(f, filter);
 		printf("Save complete\n");
 		if(!repeat)
 			break;
