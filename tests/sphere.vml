@@ -1,22 +1,32 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="latin1"?>
 
 <vml version="1.0">
 
-<node-object id="n3" name="sphere">
+<node-object id="n2" name="sphere">
 	<transform>
 		<position>0.0 0.0 0.0</position>
-		<rotation>0.0 0.0 0.0 1.0</rotation>
+		<rotation>0.0 0.0 0.0 1.000000</rotation>
 		<scale>1.0 1.0 1.0</scale>
 	</transform>
 	<links>
-		<link node="n2" label="geometry" target="0"/>
+		<link node="n1" label="geometry" target="0"/>
+		<link node="n3" label="material" target="0"/>
 	</links>
 </node-object>
 
-<node-geometry id="n2" name="sphere-geo">
+<node-object id="n4" name="light">
+	<transform>
+		<position>0.75 0.75 0.75</position>
+		<rotation>0.0 0.0 0.0 1.000000</rotation>
+		<scale>1.0 1.0 1.0</scale>
+	</transform>
+	<light>
+		1.0 1.0 1.0
+	</light>
+</node-object>
+
+<node-geometry id="n1" name="sphere-geo">
 	<layers>
-		<!-- At the bare mesh level, this is a cube. It turns to a sphere
-		     thanks to having its creases set to "all smooth", below. -->
 		<layer-vertex-xyz name="vertex">
 			<v>0 -0.5 1.0 -0.5</v>
 			<v>1  0.5 1.0 -0.5</v>
@@ -35,32 +45,49 @@
 			<p>0 2 6 4</p>
 			<p>3 1 5 7</p>
 		</layer-polygon-corner-uint32>
-		<!-- All zeroes here, makes the vertices smooth. -->
 		<layer-vertex-uint32 name="vcrease">
-			<v>0  0</v>
-			<v>1  0</v>
-			<v>2  0</v>
-			<v>3  0</v>
-			<v>4  0</v>
-			<v>5  0</v>
-			<v>6  0</v>
-			<v>7  0</v>
+			<v>0 0</v>
+			<v>1 0</v>
+			<v>2 0</v>
+			<v>3 0</v>
+			<v>4 0</v>
+			<v>5 0</v>
+			<v>6 0</v>
+			<v>7 0</v>
 		</layer-vertex-uint32>
-		<!-- All zeroes here too, for smooth edges. -->
 		<layer-polygon-corner-uint32 name="pcrease">
-			<p>0  0 0 0 0</p>
-			<p>1  0 0 0 0</p>
-			<p>2  0 0 0 0</p>
-			<p>3  0 0 0 0</p>
-			<p>4  0 0 0 0</p>
-			<p>5  0 0 0 0</p>
+			<p>0 0 0 0</p>
+			<p>1 0 0 0</p>
+			<p>2 0 0 0</p>
+			<p>3 0 0 0</p>
+			<p>4 0 0 0</p>
+			<p>5 0 0 0</p>
 		</layer-polygon-corner-uint32>
 	</layers>
-	<!-- Set the crease layers. We could use the 'default' attribute instead,
-	     and not need the explicit layers, but this example wants to be very
-	     explicit with the crease data. -->
-	<vertexcrease layer="vcrease"/>
-	<edgecrease layer="pcrease"/>
+	<vertexcrease layer="vcrease" default="4294967295"/>
+	<edgecrease layer="pcrease" default="4294967295"/>
 </node-geometry>
 
+<node-material id="n3" name="sphere-mat">
+	<fragments>
+		<fragment-output id="f0">
+			<label>color</label>
+			<front>f1</front>
+		</fragment-output>
+		<fragment-blender id="f1">
+			<type>VN_M_BLEND_MULTIPLY</type>
+			<data_a>f2</data_a>
+			<data_b>f3</data_b>
+		</fragment-blender>
+		<fragment-color id="f2">
+			<color>0.500000 0.500000 0.500000</color>
+		</fragment-color>
+		<fragment-light id="f3">
+			<type>VN_M_LIGHT_DIRECT_AND_AMBIENT</type>
+			<normal_falloff>0.000000</normal_falloff>
+		</fragment-light>
+	</fragments>
+</node-material>
+
 </vml>
+
