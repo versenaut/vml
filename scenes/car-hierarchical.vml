@@ -12,10 +12,10 @@
 		<link node="n1" label="geometry" target="0"/>
 		<link node="n2" label="matsel" target="0"/>
 		<link node="n3" label="matsel" target="2"/>
-		<link node="n8" label="child" target="0"/>
-		<link node="n12" label="child" target="0"/>
-		<link node="n13" label="child" target="0"/>
-		<link node="n15" label="child" target="0"/>
+		<link node="n8" label="child"  target="4294957295"/>
+		<link node="n12" label="child" target="4294957295"/>
+		<link node="n13" label="child" target="4294957295"/>
+		<link node="n15" label="child" target="4294957295"/>
 	</links>
 </node-object>
 
