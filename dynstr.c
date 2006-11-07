@@ -74,6 +74,38 @@ DynStr * dynstr_new_sized(size_t size)
 	return NULL;
 }
 
+DynStr * dynstr_new_from_file(const char *filename)
+{
+	DynStr	*ds = NULL;
+	FILE	*in;
+
+	if(filename == NULL)
+		return NULL;
+	if((in = fopen(filename, "rb")) != NULL)
+	{
+		if(fseek(in, 0, SEEK_END) == 0)
+		{
+			long	size;
+
+			size = ftell(in);
+			if(size > 0 && fseek(in, 0, SEEK_SET) == 0)
+			{
+				ds = dynstr_new_sized(size);
+				if(ds != NULL)
+				{
+					if(fread(ds->str, size, 1, in) == 1)
+					{
+						ds->len = size;
+						ds->str[size] = '\0';
+					}
+				}
+			}
+		}
+		fclose(in);
+	}
+	return ds;
+}
+
 void dynstr_assign(DynStr *str, const char *text)
 {
 	size_t	len;
