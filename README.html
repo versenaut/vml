@@ -192,12 +192,12 @@ object/bar_20061108_141517Z.vml
 </pre>
 <p>
 Here, the <tt>dump_20061108_141517Z.vml</tt> file is the top-level file, which is saved out
-in the directory from which the saver was called. The timestamp has the following format:
-<blockquote>
-&lt;date>_&lt;time>
-</blockquote>
-Where the &lt;date> is in <a href="http://en.wikipedia.org/wiki/ISO_8601">ISO 8601</a> format
-(i.e. YYYYMMDD), as is the &lt;time> (HHMMSS). The trailing 'Z' is part of the timestamp, and
+in the directory from which the saver was called. The timestamp consists of two parts, a date and
+a time, separated by an underscore.
+</p>
+<p>
+The date part is in <a href="http://en.wikipedia.org/wiki/ISO_8601">ISO 8601</a> format
+(i.e. YYYYMMDD), as is the time (HHMMSS). The trailing 'Z' is part of the timestamp, and
 indicates that it is in the UTC timezone.
 </p>
 <p>
