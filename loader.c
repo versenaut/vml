@@ -216,6 +216,7 @@ static void node_map_clear(MainInfo *min)
 {
 	if(min->node_map != NULL)
 	{
+		mem_free(min->node_map);
 		min->node_map = NULL;
 	}
 	min->node_map_size = 0u;
@@ -831,7 +832,6 @@ static int process_geometry(MainInfo *min)
 	else if(strcmp(el, "bones") == 0)
 	{
 		List	*bones, *iter;
-		const VNQuat64	norot = { 0 };
 		int	i = 0;
 
 		/* This uses the (new) support for user-assigned ID:s, and just uploads the bones straight
@@ -845,10 +845,11 @@ static int process_geometry(MainInfo *min)
 			const char	*wght = xmlnode_eval_single(b, "weight"),
 					*ref = xmlnode_eval_single(b, "reference"),
 					*pr = xmlnode_eval_single(b, "pos-label"),
-					*rr = xmlnode_eval_single(b, "rot-label");
+					*rr = xmlnode_eval_single(b, "rot-label"),
+					*sr = xmlnode_eval_single(b, "scale-label");
 			uint32		par = child_get_ref(b, "parent", 'b', ~0u);
 
-			verse_send_g_bone_create(min->node_id, (uint16) i, wght, ref, par, i, 0.0, 0.0, pr, &norot, rr);
+			verse_send_g_bone_create(min->node_id, (uint16) i, wght, ref, par, i, 0.0, 0.0, pr, rr, sr);
 		}
 		list_destroy(bones);
 		min->iter = xmlnode_iter_next(min->iter, here);	/* That's it, skip it now. */
@@ -1131,6 +1132,7 @@ static int process_bitmap(MainInfo *min)
 			x = strtoul(xs, NULL, 10);
 			y = strtoul(ys, NULL, 10);
 			z = strtoul(zs, NULL, 10);
+/*			printf("%s,%s,%s -> %u,%u,%u\n", xs, ys, zs, x, y, z);*/
 			i = 0;
 			for(i = 0; i < sizeof tile.vuint8 / sizeof *tile.vuint8; i++)
 			{
@@ -1426,6 +1428,7 @@ static int process_text(MainInfo *min)
 		const char	*lang = xmlnode_eval_single(here, "");
 
 		message(min, 2, "text node langauge: '%s'\n", lang);
+		verse_send_t_language_set(min->node_id, lang);
 		min->iter = xmlnode_iter_next(min->iter, NULL);
 	}
 	else if(strcmp(el, "buffers") == 0)
@@ -1899,6 +1902,8 @@ static List * file_begin(MainInfo *min)
 	sorted = list_concat(sorted, objsort);
 	/* And throw out the old objects-only tail. */
  	list_destroy(obj0);
+	hash_destroy(obj);
+
 	return sorted;
 }
 
@@ -1915,46 +1920,38 @@ static void cb_connect_accept(void *user, VNodeID avatar, const char *address, c
 
 /* ----------------------------------------------------------------------------------------- */
 
+/* This is an xmlnode loader callback. It uses some simple heuristics to get the path to the
+ * root input file we're currently processing, and appends any href value there, if it looks
+ * relative.
+*/
+static char * xml_load_callback(const char *uri, void *user)
+{
+	char	buffer[4096], *put = buffer;
+	DynStr	*ds;
+
+	if(uri[0] != '/' && uri[0] != '\\')
+	{
+		strcpy(buffer, user);	/* Overwrite with full input filename, e.g. "a/b/c/d/foo.vml". */
+		if((put = strrchr(buffer, '/')) != NULL || ((put = strrchr(buffer, '\\'))) != NULL)
+			put++;	/* Advance to just after last separator. */
+		else
+			put = buffer;
+	}
+	strcpy(put, uri);
+	if((ds = dynstr_new_from_file(buffer)) != NULL)
+		return dynstr_destroy(ds, 0);	/* Destroys the string, not the buffer, which is returned. */
+	return NULL;
+}
+
 static XmlNode * load(const char *filename)
 {
-	FILE	*in;
+	DynStr	*ds;
 
-	if((in = fopen(filename, "r")) != NULL)
+	xmlnode_set_loader(xml_load_callback, filename);
+	if((ds = dynstr_new_from_file(filename)) != NULL)
 	{
-		DynStr	*text = NULL;
-		char	buf[512 << 10];
-		int	got;
-		XmlNode	*n;
-
-		if(fseek(in, 0, SEEK_END) == 0)	/* Find size of file, so we can pre-alloc dynstr fully. */
-		{
-			long	size = ftell(in);
-			if(fseek(in, 0, SEEK_SET) != 0)
-			{
-				fprintf(stderr, "loader: Couldn't seek back to start of \"%s\"\n", filename);
-				fclose(in);
-				return NULL;
-			}
-			if(size <= 0)
-			{
-				fprintf(stderr, "loader: Couldn't find size of \"%s\"\n", filename);
-				fclose(in);
-				return NULL;
-			}
-			text = dynstr_new_sized(size);
-		}
-		else
-		{
-			fprintf(stderr, "loader: Couldn't seek to end of \"%s\"\n", filename);
-			fclose(in);
-			return NULL;
-		}
-
-		while((got = fread(buf, 1, sizeof buf, in)) > 0)
-			dynstr_append_len(text, buf, got);
-		fclose(in);
-		n = xmlnode_new(dynstr_string(text));
-		dynstr_destroy(text, 1);
+		XmlNode	*n = xmlnode_new(dynstr_string(ds));
+		dynstr_destroy(ds, 1);
 		return n;
 	}
 	return NULL;
@@ -2029,9 +2026,7 @@ int main(int argc, char *argv[])
 		{
 			n = load(argv[i]);
 			if(n != NULL)
-			{
 				min.files = list_append(min.files, n);
-			}
 			else
 				fprintf(stderr, "loader: Couldn't load VML from \"%s\"\n", argv[i]);
 		}
@@ -2110,6 +2105,9 @@ int main(int argc, char *argv[])
 		}
 		min.file_iter = list_next(min.file_iter);
 	}
+	node_map_clear(&min);
+	for(min.file_iter = min.files; min.file_iter != NULL; min.file_iter = list_next(min.file_iter))
+		xmlnode_destroy(list_data(min.file_iter));
 
 	do
 	{
