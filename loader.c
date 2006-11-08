@@ -435,7 +435,7 @@ static int process_common(MainInfo *min)
 					size_t		size;
 					unsigned long	x;
 
-					for(; size < sizeof data && (x = strtoul(value, &eptr, 10), eptr > value); size++)
+					for(size = 0; size < sizeof data && (x = strtoul(value, &eptr, 10), eptr > value); size++)
 					{
 						data[size] = x;
 						value = eptr;
