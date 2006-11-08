@@ -38,7 +38,7 @@ Author: Emil Brink, PDC, KTH 2006. For <a href="http://www.uni-verse.org/">Uni-V
 This text briefly describes the "saver" and "loader" Verse clients.
 The purpose of these programs is to create and use disk files holding
 Verse content, in textual format. This format, called VML ("Verse
-Modelling Language"), is based on XML.
+Modeling Language"), is based on XML.
 </p>
 <p>
 The tools were written in parallel by two authors; the saver by Eskil
@@ -147,7 +147,7 @@ In this mode, the saver runs once, and creates a (possibly very big) single VML 
 a snapshot of the entire state of the server, as it was when the saver began saving. You can
 control the amount of time the saver spends downloading, before it starts to save, with the
 <code>-i <i>n</i></code> option. Since it is not possible to say when the scene is "finished"
-downloading, this is all you can do. You can set the name of the outputfile with the
+downloading, this is all you can do. You can set the name of the output file with the
 <code>-f <i>name</i></code> option. After writing the single file, the saver will exit.
 </p>
 
@@ -171,7 +171,7 @@ may at most pass between snapshots, even if changes occur all the time.
 <p>
 The general idea is to create an initial snapshot that includes all the server's contents, then
 every once in a while (as set by the <code>-c</code>) option, create an updated snapshot holding
-only the nodes that changed since the last one. In case the data is cahnging all the time, this
+only the nodes that changed since the last one. In case the data is changing all the time, this
 would be starved from saving at all, which is why the second period (set by the <code>-C</code>
 option) exists, and makes sure that the data is saved regularly.
 </p>
@@ -248,7 +248,7 @@ In continuous mode, we could use a command line like the following to start it o
 <pre class="shell">~> ./saver -i 20 -c 30 -C 600
 </pre>
 This would check, every 20 seconds, if 30 seconds have passed since the last time any node changed.
-If so, it would trigger a new snapsnot. If no new snapshot has been saved, and it is more than 600
+If so, it would trigger a new snapshot. If no new snapshot has been saved, and it is more than 600
 seconds (10 minutes) since the last snapshot, a new snapshot will be generated anyway. In this mode,
 the saver will continue running until its process is killed.
 </p>
