@@ -20,6 +20,15 @@ border-style: solid;
 border-color: black;
 border-width: thin;
 }
+
+span.opt {
+font-family: monospace;
+}
+
+span.var {
+font-style: italic;
+font-weight: bold;
+}
 </style>
 
 <title>About the VML Tools</title>
@@ -237,10 +246,10 @@ The saver is typically called from a command line, like this (in one-shot mode):
 <pre class="shell">~> ./saver -1 -i 30 -f test.vml
 </pre>
 <p>
-This will save the file only once and then exit (the "-1 option"), after
-first waiting 30 seconds for data to download (the "-i 30"). The file will
-be named <tt>test.vml</tt>, as indicated by the "-f test.vml" option. There are
-other options, give it a "-h" option to display them.
+This will save the file only once and then exit (the "<span class="opt">-1</span>" option), after
+first waiting 30 seconds for data to download (the "<span class="opt">-i 30</span>"). The file will
+be named <tt>test.vml</tt>, as indicated by the "<span class="opt">-f test.vml</span>" option. There are
+other options, give it a "<span class="opt">-h</span>" option to display them.
 </p>
 
 <p>
@@ -252,6 +261,33 @@ If so, it would trigger a new snapshot. If no new snapshot has been saved, and i
 seconds (10 minutes) since the last snapshot, a new snapshot will be generated anyway. In this mode,
 the saver will continue running until its process is killed.
 </p>
+
+<h3>All saver Options</h3>
+<p>
+These are all the options currently supported by the saver:
+</p>
+<dl>
+<dt><span class="opt">-h</span></dt>
+<dd>Shows a list of available options.</dd>
+<dt><span class="opt">-n <span class="var">name</span></span>
+<dd>Set user name to use when logging into Verse.</dd>
+<dt><span class="opt">-p <span class="var">pass</span></span>
+<dd>Set password to use when logging into Verse.</dd>
+<dt><span class="opt">-a <span class="var">address</span></span>
+<dd>Set Verse server address to connect to.</dd>
+<dt><span class="opt">-f <span class="var">filename</span></span>
+<dd>Set filename for output.</dd>
+<dt><span class="opt">-l</span> (lower case letter L)
+<dd>Filter out object nodes without links or tags.</dd>
+<dt><span class="opt">-1</span> (the digit one)
+<dd>Save only once, then exit.</dd>
+<dt><span class="opt">-i <span class="var">interval</span></span>
+<dd>Sets number of seconds spent downloading before saving (or attempting to save, in continuous mode).</dd>
+<dt><span class="opt">-c <span class="var">n</span></span>
+<dd>In continuous mode, save un-changed nodes every <span class="var">n</span> seconds.</dd>
+<dt><span class="opt">-C <span class="var">n</span></span>
+<dd>In cintinuous mode, save nodes every <span class="var">n</span> seconds, even if changing.</dd>
+</dl>
 
 <h2>Using the Loader</h2>
 <p>
