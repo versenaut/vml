@@ -40,6 +40,38 @@ struct XmlNode
 	void		*user;
 };
 
+static char * simple_loader(const char *uri, void *user);
+
+static struct
+{
+	char *	(*loader)(const char *uri, void *user);
+	void	*user;
+} LoaderInfo = { simple_loader, NULL };
+
+/* ----------------------------------------------------------------------------------------- */
+
+static char * simple_loader(const char *uri, void *user)
+{
+	DynStr	*ds;
+
+	printf("loading '%s'\n", uri);
+	if((ds = dynstr_new_from_file(uri)) != NULL)
+	{
+		const char	*buf = dynstr_string(ds);	/* Extract the buffer. */
+		dynstr_destroy(ds, 0);			/* Destroy the string, but not the buffer. */
+		return (char *) buf;
+	}
+	return NULL;
+}
+
+void xmlnode_set_loader(char * (*loader)(const char *uri, void *user), void *user)
+{
+	if(loader == NULL)
+		loader = simple_loader;
+	LoaderInfo.loader = loader;
+	LoaderInfo.user = user;
+}
+
 /* ----------------------------------------------------------------------------------------- */
 
 #define	TOKEN_STATUS_RETURN(s, r)	*status = s; return r;
@@ -115,7 +147,7 @@ static const char * token_get(const char *buffer, DynStr **token, TokenStatus *s
 							buffer += 4;
 							continue;
 						}
-						if(strncmp(buffer, "&amp;", 4) == 0)
+						else if(strncmp(buffer, "&amp;", 4) == 0)
 						{
 							dynstr_append_c(d, '&');
 							buffer += 5;
@@ -444,6 +476,44 @@ static void tree_reverse_children(XmlNode *root)
 		tree_reverse_children(list_data(iter));
 }
 
+static XmlNode *	tree_build(XmlNode *parent, const char **buffer, int *complete);
+
+static XmlNode * do_include(const char *href)
+{
+	XmlNode		*tree = NULL;
+	char		*buf = NULL;
+	int		ok;
+
+	if(href == NULL)
+	{
+		LOG_WARN(("Broken xi:include element, missing 'href' attribute--skipping"));
+		return NULL;
+	}
+
+	/* Ask the registered loader function to retreive the resource. */
+	if((buf = (char *) LoaderInfo.loader(href, LoaderInfo.user)) != NULL)
+	{
+		const char	*parse = buf;
+		/* Don't just call xmlnode_new() here, since that ends up reversing the children,
+		 * which means we would have to re-reverse them to counter the reverse that will
+		 * be done on the final result tree. Rather, build a reversed sub-tree, so that
+		 * the final reverse puts it all right. Should save some cycles.
+		*/
+		tree = tree_build(NULL, &parse, &ok);
+		free(buf);	/* Currently, loaders must return memory that can be free()d. */
+		if(tree == NULL || !ok)
+		{
+			LOG_WARN(("Failed to build included tree from \"%s\"--skipping", href));
+			if(tree != NULL)
+				xmlnode_destroy(tree);
+			tree = NULL;
+		}
+	}
+	else
+		LOG_WARN(("Failed to load xi:include resource \"%s\"--skipping", href));
+	return tree;
+}
+
 /* Traverse <buffer>, extracting tokens. Build nodes from tokens, and add to <parent> as fit. Recurse. */
 static XmlNode * tree_build(XmlNode *parent, const char **buffer, int *complete)
 {
@@ -487,7 +557,7 @@ static XmlNode * tree_build(XmlNode *parent, const char **buffer, int *complete)
 				}
 				else
 				{
-					XmlNode	*child, *subtree = NULL;
+					XmlNode	*child = NULL, *subtree = NULL;
 
 					child = node_new(tag);
 					dynstr_destroy(token, 1);
@@ -495,39 +565,15 @@ static XmlNode * tree_build(XmlNode *parent, const char **buffer, int *complete)
 
 					if(st == TAGEMPTY && strcmp(xmlnode_get_name(child), "xi:include") == 0)	/* Use of xi:include? */
 					{
-						const char	*href = xmlnode_attrib_get_value(child, "href");
-						DynStr		*ds;
+						XmlNode	*inc;
 
-						if(href != NULL)
+						if((inc = do_include(xmlnode_attrib_get_value(child, "href"))) != NULL)
 						{
-							if((ds = dynstr_new_from_file(href)) != NULL)
-							{
-								const char	*buf;
-								int		ok;
-
-								buf = dynstr_string(ds);
-								/* Don't just call xmlnode_new() here, since that ends up reversing the children,
-								 * which means we would have to re-reverse them to counter the reverse that will
-								 * be done on the final result tree. Rather, build a reversed sub-tree, so that
-								 * the final reverse puts it all right. Should save some cycles.
-								*/
-								child = tree_build(NULL, &buf, &ok);
-								if(child == NULL || !ok)
-								{
-									LOG_ERR(("Failed to build included tree from \"%s\"--aborting", href));
-									if(child != NULL)
-										xmlnode_destroy(child);
-									child = NULL;
-								}
-								dynstr_destroy(ds, 1);
-/*								xmlnode_print_outline(child);*/
-							}
-							else
-								LOG_ERR(("Unable to execute xi:include, referenced file '%s' not found--aborting", href));
+							xmlnode_destroy(child);
+							child = inc;
 						}
-						else
-							LOG_ERR(("Broken xi:include element, missing 'href' attribute--aborting"));
 					}
+					
 					if(st != TAGEMPTY)
 						subtree = tree_build(child, buffer, complete);
 					else

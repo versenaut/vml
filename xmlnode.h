@@ -18,6 +18,8 @@
 
 typedef struct XmlNode	XmlNode;
 
+extern void		xmlnode_set_loader(char * (*loader)(const char *uri, void *user), void *user);
+
 /* Create XML parse tree from textual representation in <buffer>. */
 extern XmlNode	*	xmlnode_new(const char *buffer);
 
