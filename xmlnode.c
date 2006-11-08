@@ -227,7 +227,7 @@ static const char * token_get(const char *buffer, DynStr **token, TokenStatus *s
 		*token = d;
 		return buffer;
 	}
-	else
+	else	/* Load some text. */
 	{
 		if((d = *token) == NULL)
 			d = dynstr_new_sized(16);
@@ -550,7 +550,10 @@ static XmlNode * tree_build(XmlNode *parent, const char **buffer, int *complete)
 				else if(tag[0] == '/')
 				{
 					if(node_closes(parent, tag))
+					{
+						dynstr_destroy(token, 1);
 						return parent;
+					}
 					LOG_ERR(("Element nesting error in XML source, <%s> vs <%s>--aborting", tag, parent->element));
 					*complete = 0;
 					return parent;
@@ -596,6 +599,11 @@ static XmlNode * tree_build(XmlNode *parent, const char **buffer, int *complete)
 						LOG_WARN(("Ignoring top-level text"));
 						dynstr_destroy(token, 1);
 					}
+					token = NULL;
+				}
+				else	/* If the text disappeared, it was all whitespace. Free the token. */
+				{
+					dynstr_destroy(token, 1);
 					token = NULL;
 				}
 			}
