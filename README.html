@@ -120,9 +120,118 @@ Building the loader is easy, as illustrated by the included Makefile.
 Once you have the tools built, using them is simple.
 </p>
 
+<h2>Saver Modes</h2>
+<p>
+The saver has two completely different <i>modes</i> in which it can operate. The differences
+between the two modes affect how long the saver runs, and the format of the output it creates.
+</p>
+<p>
+The <code>-1</code> (the digit one) option selects which mode to use: if specified, the saver
+runs in one-shot mode. If omitted, it runs in continuous mode.
+</p>
+<p>
+The modes are:
+</p>
+<ul>
+<li><a href="#oneshot">One-shot</a>
+<li><a href="#cont">Continuous</a>
+</ul>
+</p>
+<h3><a name="oneshot">One-Shot Mode</a></h3>
+<p>
+Activated by including the <code>-1</code> ("minus one") option on the command line.
+</p>
+<p>
+In this mode, the saver runs once, and creates a (possibly very big) single VML file containing
+a snapshot of the entire state of the server, as it was when the saver began saving. You can
+control the amount of time the saver spends downloading, before it starts to save, with the
+<code>-i <i>n</i></code> option. Since it is not possible to say when the scene is "finished"
+downloading, this is all you can do. You can set the name of the outputfile with the
+<code>-f <i>name</i></code> option. After writing the single file, the saver will exit.
+</p>
+
+<h3><a name="cont">Continuous Mode</a></h3>
+<p>
+Default, does not require any special option to enable.
+</p>
+<p>
+This mode is meant for more serious back-up and roll-back of a server's contents. In it, the
+saver runs for a prolonged duration (minutes, hours, or days), creating new snapshots of the
+server's contents from time to time.
+<p>
+In continuous mode, the saver's actions are controlled by two further time intervals:
+</p>
+<ul>
+<li>The change period, set by the <code>-c <i>n</i></code> option, controls how many seconds
+after the last change the saver will do a new snapshot.
+<li>The override period, set by the <code>-C <i>n</i></code> option, controls how many seconds
+may at most pass between snapshots, even if changes occur all the time.
+</ul>
+<p>
+The general idea is to create an initial snapshot that includes all the server's contents, then
+every once in a while (as set by the <code>-c</code>) option, create an updated snapshot holding
+only the nodes that changed since the last one. In case the data is cahnging all the time, this
+would be starved from saving at all, which is why the second period (set by the <code>-C</code>
+option) exists, and makes sure that the data is saved regularly.
+</p>
+<p>
+In continuous mode, the saver saves data in the same VML format as used otherwise, but splits
+it into multiple files. In general, there's one top-level file for each snapshot, and a number
+of separate files describing each node in the snapshot. The files are linked by use of
+<a href="http://www.w3.org/TR/2003/WD-xinclude-20031110/">XML Inclusions</a> from the top-level
+file.
+</p>
+<p>
+For example, consider a server holding two object nodes, and nothing else. Let's call the nodes
+"foo" and "bar". An initial snapshot would result in the following files being output:
+</p>
+<pre class="shell">dump_20061108_141517Z.vml
+object/foo_20061108_141517Z.vml
+object/bar_20061108_141517Z.vml
+</pre>
+<p>
+Here, the <tt>dump_20061108_141517Z.vml</tt> file is the top-level file, which is saved out
+in the directory from which the saver was called. The timestamp has the following format:
+<blockquote>
+&lt;date>_&lt;time>
+</blockquote>
+Where the &lt;date> is in <a href="http://en.wikipedia.org/wiki/ISO_8601">ISO 8601</a> format
+(i.e. YYYYMMDD), as is the &lt;time> (HHMMSS). The trailing 'Z' is part of the timestamp, and
+indicates that it is in the UTC timezone.
+</p>
+<p>
+Further, please note that the per-node files are in a directory named by the node type ("object")
+in this case, since the two nodes were object nodes. If we were to look inside the top-level VML
+file, we would see something like this:
+</p>
+<pre class="shell">&lt;?xml version="1.0" encoding="latin1"?>
+
+&lt;vml version="1.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+&lt;xi:include href="object/foo_20061108_141517Z.vml"/>
+&lt;xi:include href="object/bar_20061108_141517Z.vml"/>
+&lt;/vml>
+</pre>
+<p>
+Basically, it just wraps two <code>xi:include</code> elements with a top-level <tt>vml</tt> element,
+to make the result as a whole (once the includes are performed) a valid VML file.
+</p>
+<p>
+At this time, if we were to somehow modify the node named "bar", at the next snapshot time, we would
+get:
+</p>
+<ul>
+<li>A new top-level snapshot, with the current time in its filename.
+<li>A new "bar" snapshot in the <code>objects/</code> directory.
+</ul>
+<p>
+The new top-level snapshot would include the new "bar" node, but would continue to include the <b>old</b>
+version of the "foo" node, since it's still the most recent, the node hasn't changed between the two
+snapshots.
+</p>
+
 <h2>Using the Saver</h2>
 <p>
-The saver is typically called from a command line, like this:
+The saver is typically called from a command line, like this (in one-shot mode):
 </p>
 <pre class="shell">~> ./saver -1 -i 30 -f test.vml
 </pre>
@@ -146,4 +255,3 @@ to be filenames of VML files, which will be uploaded individually.
 </p>
 </body>
 </html>
-
