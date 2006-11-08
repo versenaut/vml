@@ -126,20 +126,21 @@ The saver has two completely different <i>modes</i> in which it can operate. The
 between the two modes affect how long the saver runs, and the format of the output it creates.
 </p>
 <p>
-The <code>-1</code> (the digit one) option selects which mode to use: if specified, the saver
-runs in one-shot mode. If omitted, it runs in continuous mode.
-</p>
-<p>
 The modes are:
 </p>
 <ul>
 <li><a href="#oneshot">One-shot</a>
 <li><a href="#cont">Continuous</a>
 </ul>
+<p>
+The command-line option <code>-1</code> ("minus one") selects which mode to use: if specified, the saver
+runs in one-shot mode. If omitted, it runs in continuous mode.
+</p>
+
 </p>
 <h3><a name="oneshot">One-Shot Mode</a></h3>
 <p>
-Activated by including the <code>-1</code> ("minus one") option on the command line.
+Activated by including the <code>-1</code> option on the command line.
 </p>
 <p>
 In this mode, the saver runs once, and creates a (possibly very big) single VML file containing
@@ -200,7 +201,7 @@ Where the &lt;date> is in <a href="http://en.wikipedia.org/wiki/ISO_8601">ISO 86
 indicates that it is in the UTC timezone.
 </p>
 <p>
-Further, please note that the per-node files are in a directory named by the node type ("object")
+Further, please note that the per-node files are in a directory named after the node type ("object")
 in this case, since the two nodes were object nodes. If we were to look inside the top-level VML
 file, we would see something like this:
 </p>
@@ -240,6 +241,16 @@ This will save the file only once and then exit (the "-1 option"), after
 first waiting 30 seconds for data to download (the "-i 30"). The file will
 be named <tt>test.vml</tt>, as indicated by the "-f test.vml" option. There are
 other options, give it a "-h" option to display them.
+</p>
+
+<p>
+In continuous mode, we could use a command line like the following to start it off:
+<pre class="shell">~> ./saver -i 20 -c 30 -C 600
+</pre>
+This would check, every 20 seconds, if 30 seconds have passed since the last time any node changed.
+If so, it would trigger a new snapsnot. If no new snapshot has been saved, and it is more than 600
+seconds (10 minutes) since the last snapshot, a new snapshot will be generated anyway. In this mode,
+the saver will continue running until its process is killed.
 </p>
 
 <h2>Using the Loader</h2>
