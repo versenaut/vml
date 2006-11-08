@@ -2,14 +2,6 @@
 
 <vml version="1.0">
 
-<node-object id="n0" name="Object_Node_0">
-	<transform>
-		<position>0.000000 0.000000 0.000000</position>
-		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
-		<scale>1.000000 1.000000 1.000000</scale>
-	</transform>
-</node-object>
-
 <node-object id="n18" name="Object_Node_24">
 	<transform>
 		<position>-1.500000 0.000000 1.500000</position>
@@ -20,14 +12,6 @@
 		<link node="n7" label="material" target="0"/>
 		<link node="n2" label="geometry" target="0"/>
 	</links>
-</node-object>
-
-<node-object id="n19" name="Object_Node_3">
-	<transform>
-		<position>0.000000 0.000000 0.000000</position>
-		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
-		<scale>1.000000 1.000000 1.000000</scale>
-	</transform>
 </node-object>
 
 <node-object id="n20" name="Table">
@@ -161,14 +145,6 @@
 	</links>
 </node-object>
 
-<node-object id="n31" name="Object_Node_30">
-	<transform>
-		<position>0.000000 0.000000 0.000000</position>
-		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
-		<scale>1.000000 1.000000 1.000000</scale>
-	</transform>
-</node-object>
-
 <node-object id="n32" name="transparent">
 	<transform>
 		<position>1.500000 0.000000 1.500000</position>
@@ -179,14 +155,6 @@
 		<link node="n2" label="geometry" target="0"/>
 		<link node="n11" label="material" target="0"/>
 	</links>
-</node-object>
-
-<node-object id="n33" name="Object_Node_31">
-	<transform>
-		<position>0.000000 0.000000 0.000000</position>
-		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
-		<scale>1.000000 1.000000 1.000000</scale>
-	</transform>
 </node-object>
 
 <node-object id="n34" name="volume">
@@ -201,14 +169,6 @@
 	</links>
 </node-object>
 
-<node-object id="n35" name="Object_Node_23">
-	<transform>
-		<position>0.000000 0.000000 0.000000</position>
-		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
-		<scale>1.000000 1.000000 1.000000</scale>
-	</transform>
-</node-object>
-
 <node-object id="n36" name="noise">
 	<transform>
 		<position>0.000000 0.000000 -3.000000</position>
@@ -219,14 +179,6 @@
 		<link node="n2" label="geometry" target="0"/>
 		<link node="n38" label="material" target="0"/>
 	</links>
-</node-object>
-
-<node-object id="n39" name="Object_Node_39">
-	<transform>
-		<position>0.000000 0.000000 0.000000</position>
-		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
-		<scale>1.000000 1.000000 1.000000</scale>
-	</transform>
 </node-object>
 
 <node-geometry id="n2" name="Geometry_Node_1">
@@ -859,11 +811,6 @@
 			<label>color</label>
 			<front>f0</front>
 		</fragment-output>
-	</fragments>
-</node-material>
-
-<node-material id="n37" name="Material_Node_37">
-	<fragments>
 	</fragments>
 </node-material>
 
@@ -123784,4 +123731,3 @@
 </node-bitmap>
 
 </vml>
-
