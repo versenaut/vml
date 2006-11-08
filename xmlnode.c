@@ -502,8 +502,23 @@ static XmlNode * tree_build(XmlNode *parent, const char **buffer, int *complete)
 						{
 							if((ds = dynstr_new_from_file(href)) != NULL)
 							{
-								child = xmlnode_new(dynstr_string(ds));	/* Major recursion, signing in for duty. */
-								tree_reverse_children(child);		/* Reversal done twice is no reversal. */
+								const char	*buf;
+								int		ok;
+
+								buf = dynstr_string(ds);
+								/* Don't just call xmlnode_new() here, since that ends up reversing the children,
+								 * which means we would have to re-reverse them to counter the reverse that will
+								 * be done on the final result tree. Rather, build a reversed sub-tree, so that
+								 * the final reverse puts it all right. Should save some cycles.
+								*/
+								child = tree_build(NULL, &buf, &ok);
+								if(child == NULL || !ok)
+								{
+									LOG_ERR(("Failed to build included tree from \"%s\"--aborting", href));
+									if(child != NULL)
+										xmlnode_destroy(child);
+									child = NULL;
+								}
 								dynstr_destroy(ds, 1);
 /*								xmlnode_print_outline(child);*/
 							}
