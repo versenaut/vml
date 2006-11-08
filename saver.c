@@ -18,6 +18,7 @@
 #include <direct.h>
 #define _getcwd	getcwd
 #define	_chdir	chdir
+#define	mkdir(name, mode)	_mkdir(name)
 #define	SEP_CHAR	'\\'
 #else	/* If it's not Windows, it's POSIX. */
 #include <sys/stat.h>
