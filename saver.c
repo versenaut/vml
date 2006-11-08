@@ -11,9 +11,181 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+
+/* For working with files and directories. */
+#if defined _WIN32
+#include <direct.h>
+#define _getcwd	getcwd
+#define	_chdir	chdir
+#define	SEP_CHAR	'\\'
+#else	/* If it's not Windows, it's POSIX. */
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#define	SEP_CHAR	'/'
+#endif
 
 #include "verse.h"
 #include "enough.h"
+
+typedef struct{
+	uint last_save;
+	uint last_update;
+	char last_name[256];
+	boolean saved;
+}NodeUpdate;
+
+/* ------------------------------------------------------------------------------------------------ */
+
+#define	BUF_SIZE	1024	/* Easier than getting PATH_MAX. :/ */
+
+/* Make a path canonical. This is defined as:
+ * - No initial slashes (forward or backward) or periods.
+ * - Components separated by a single separator char.
+ * It should/could be more picky, but that would be overkill, for now.
+*/
+static char * path_canonicalize(const char *path)
+{
+	static char	buf[BUF_SIZE];
+	char		*put = buf, *end = buf + sizeof buf - 1;
+
+	/* Flush any initial combination of slashes and periods. */
+	while(*path == '.' || *path == SEP_CHAR || *path == '/' || *path == '\\')
+		path++;
+
+	/* Copy characters, while squeezing slashes. */
+	while(*path && put < end)
+	{
+		if(*path == '/' || *path == '\\')
+		{
+			if(put == buf || put[-1] != '/')
+				*put++ = SEP_CHAR;
+			path++;
+		}
+		else
+		{
+			*put++ = *path++;
+		}
+	}
+	*put = '\0';
+
+	return buf;
+}
+
+/* Store the next component of <path> into memory at <buf>. */
+static int get_part(char *buf, size_t bufmax, char **path)
+{
+	char	*p, *end = buf + bufmax - 1;
+
+	if(buf == NULL || bufmax < 2 || path == NULL)
+		return 0;
+	p = *path;
+	if(*p == '\0')
+		return 0;
+	while(*p != '\0' && *p != '/' && *p != '\\' && buf < end)
+		*buf++ = *p++;
+	*buf = '\0';
+	while(*p == '/' || *p == '\\')
+		p++;
+	*path = p;
+	return 1;
+}
+
+int fut_cd(const char *path, char *prev, size_t pmax)
+{
+	if(prev != NULL && pmax > 0)
+	{
+		if(getcwd(prev, pmax) == NULL)
+			return 0;
+	}
+	if(chdir(path) == 0)
+		return 1;
+	return 0;
+}
+
+int fut_path_create(const char *path)
+{
+	char		*cp, part[BUF_SIZE], old[BUF_SIZE];
+	int		ok = 1;
+
+	if(getcwd(old, sizeof old) == NULL)
+		return 0;
+
+	if(path == NULL || (cp = path_canonicalize(path)) == NULL)
+		return 0;
+	while(ok && get_part(part, sizeof part, &cp))
+	{
+		if(fut_cd(part, NULL, 0))	/* Try to enter it, if that works, all is well. */
+			continue;
+		mkdir(part, 0777);		/* Just blindly try to create it, then enter. */
+		ok = fut_cd(part, NULL, 0);
+	}
+	fut_cd(old, NULL, 0);
+
+	return ok;
+}
+
+/* Open a file, with the given <mode>, at the given <path>. The path will be created, if it
+ * does not exist.
+*/
+FILE * fut_path_open(const char *path, const char *mode)
+{
+	char	*cp, *last;
+	FILE	*out = NULL;
+
+	if(path == NULL)
+		return NULL;
+	if(mode == NULL)
+		mode = "r";
+
+	if((cp = path_canonicalize(path)) == NULL)
+		return NULL;
+	if((last = strrchr(cp, SEP_CHAR)) != NULL)	/* Filename present? */
+	{
+		*last = '\0';
+		last++;
+		if(fut_path_create(cp))
+		{
+			char	old[BUF_SIZE];
+
+			if(fut_cd(cp, old, sizeof old))
+			{
+				out = fopen(last, mode);
+				fut_cd(old, NULL, 0);
+			}
+		}
+	}
+	return out;
+}
+
+/* ------------------------------------------------------------------------------------------------ */
+
+static void node_update_func(ENode *node, ECustomDataCommand command)
+{	
+	NodeUpdate *n;
+
+	n = e_ns_get_custom_data(node, 0);
+	switch(command)
+	{
+		case E_CDC_CREATE :
+			n = malloc(sizeof *n);
+			verse_session_get_time(&n->last_update, NULL);
+			n->last_save = n->last_update;
+			n->last_name[0] = 0;
+			n->saved = TRUE;
+			e_ns_set_custom_data(node, 0, n);
+		break;
+		case E_CDC_STRUCT :
+		case E_CDC_DATA :
+			verse_session_get_time(&n->last_update, NULL);
+			n->saved = FALSE;
+		break;
+		case E_CDC_DESTROY :
+			free(n);
+		break;
+	}
+}
 
 static void save_object(FILE *f, ENode *o_node)
 {
@@ -190,7 +362,6 @@ static void save_geometry(FILE *f, ENode *g_node)
 		for(; bone_id != (uint16)-1 ; bone_id = e_nsg_get_bone_next(g_node, bone_id + 1))
 		{
 			real64	 tmp[4];
-			VNQuat64 rot;
 			fprintf(f, "\t\t<bone id=\"b%u\">\n", bone_id);
 			fprintf(f, "\t\t\t<weight>%s</weight>\n", e_nsg_get_bone_weight(g_node, bone_id));
 			fprintf(f, "\t\t\t<reference>%s</reference>\n", e_nsg_get_bone_reference(g_node, bone_id));
@@ -203,11 +374,8 @@ static void save_geometry(FILE *f, ENode *g_node)
 			fprintf(f, "%f %f %f", tmp[0], tmp[1], tmp[2]);
 			fprintf(f, "</pos>\n");
 			fprintf(f, "\t\t\t<pos-label>%s</pos-label>\n", e_nsg_get_bone_pos_label(g_node, bone_id));
-			fprintf(f, "\t\t\t<rot>");
-			e_nsg_get_bone_rot64(g_node, bone_id, &rot);
-			fprintf(f, "%f %f %f %f", rot.x, rot.y, rot.z, rot.w);
-			fprintf(f, "</rot>\n");
 			fprintf(f, "\t\t\t<rot-label>%s</rot-label>\n", e_nsg_get_bone_rot_label(g_node, bone_id));
+//			fprintf(f, "\t\t\t<scale-label>%s</scale-label>\n", e_nsg_get_bone_scale_label(g_node, bone_id));
 			fprintf(f, "\t\t</bone>\n");
 		}
 		fprintf(f, "\t</bones>\n");
@@ -258,7 +426,7 @@ static void save_material(FILE *f, ENode *m_node)
 					"\t\t\t<normal_falloff>%f</normal_falloff>\n", 
 					light_type[frag->light.type],
 					frag->light.normal_falloff);
-				if(frag->light.brdf != ~0u)
+				if(frag->light.brdf != (uint16) ~0u)
 				{
 					fprintf(f,
 						"\t\t\t<brdf>n%u</brdf>\n"
@@ -300,7 +468,7 @@ static void save_material(FILE *f, ENode *m_node)
 					frag->geometry.layer_b);
 			break;
 			case VN_M_FT_TEXTURE :
-				if(frag->texture.bitmap != ~0u)
+				if(frag->texture.bitmap != (uint16) ~0u)
 					fprintf(f, "\t\t\t<bitmap>n%u</bitmap>\n", frag->texture.bitmap);
 				fprintf(f,
 					"\t\t\t<layer_r>%s</layer_r>\n"
@@ -708,23 +876,106 @@ static void save_node(FILE *f, ENode *node, int filter)
 	fprintf(f, "</%s>\n\n", node_el[e_ns_get_node_type(node)]);
 }
 
-static void save_data(FILE *f, int filter)
+static boolean save_data_test(uint32 change_timeout, uint32 change_override)
 {
 	ENode *node, *me = e_ns_get_node_avatar(0);
-	uint i;
+	NodeUpdate *n;
+	uint i, seconds;
 
-	fprintf(f, "<?xml version=\"1.0\" encoding=\"latin1\"?>\n\n");
-	fprintf(f, "<vml version=\"1.0\">\n\n");
+	verse_session_get_time(&seconds, NULL);
 	for(i = 0; i < V_NT_NUM_TYPES; i++)
 	{
 		for(node = e_ns_get_node_next(0, 0, i); node != NULL; node = e_ns_get_node_next(e_ns_get_node_id(node) + 1, 0, i))
 		{
-			if(node == me)
-				continue;
-			save_node(f, node, filter);
+			if(node != me)
+			{
+				n = e_ns_get_custom_data(node, 0);
+/*				printf("%s: update %u ago, saved %u ago (limits are %u and %u)\n",
+				       e_ns_get_node_name(node),
+				       seconds - n->last_update, seconds - n->last_save,
+				       change_timeout, change_override);
+*/				if(n->saved != TRUE && (n->last_save + change_override < seconds || n->last_update + change_timeout < seconds))
+					return TRUE;
+			}
 		}
 	}
-	fprintf(f, "</vml>\n\n");
+	return FALSE;
+}
+
+/* This returns a string giving the current time, in something that is very close to being ISO 8601-compliant.
+ * The only change is that instead of using a 'T' as the separator between date and time, we use a '_'. This
+ * makes it far easier to read. The trailing 'Z' is left, to indicate that the timestamp is in UTC.
+*/
+static int timestring_set(char *buffer, size_t max)
+{
+	time_t		now;
+	struct tm	*gm;
+
+	time(&now);
+	if((gm = gmtime(&now)) != NULL)
+	{
+		if(strftime(buffer, max, "%Y%m%d_%H%M%SZ", gm) > 0)
+			return 1;
+	}
+	/* If we're failing, and there's a buffer, make it empty. */
+	if(buffer != NULL && max > 0)
+		*buffer = '\0';
+	return 0;
+}
+
+static void save_data(FILE *f, char *timer, int filter, uint32 change_timeout, uint32 change_override)
+{
+	static const char *node_dir[] = { "object/", "geometry/", "material/", "bitmap/", "text/", "curve/", "audio/" };
+	ENode *node, *me = e_ns_get_node_avatar(0);
+	FILE *node_file;
+	NodeUpdate *n;
+	uint i, seconds;
+
+	verse_session_get_time(&seconds, NULL);
+	fprintf(f, "<?xml version=\"1.0\" encoding=\"latin1\"?>\n\n");
+	fprintf(f, "<vml version=\"1.0\" xmlns:xi=\"http://www.w3.org/2001/XInclude\">\n");
+	if(timer != NULL)
+	{
+		for(i = 0; i < V_NT_NUM_TYPES; i++)
+		{
+			for(node = e_ns_get_node_next(0, 0, i); node != NULL; node = e_ns_get_node_next(e_ns_get_node_id(node) + 1, 0, i))
+			{
+				if(node == me)
+					continue;
+				
+				n = e_ns_get_custom_data(node, 0);
+				if(n->saved != TRUE && (n->last_save + change_override < seconds || n->last_update + change_timeout < seconds))
+				{
+					n->last_save = seconds;
+					n->last_update = seconds;
+					timestring_set(timer, 32);
+					sprintf(n->last_name, "%s%s_%s.vml", node_dir[i], e_ns_get_node_name(node), timer);
+					if((node_file = fut_path_open(n->last_name, "w")) != NULL)
+					{
+						save_node(node_file, node, filter);
+						n->saved = TRUE;
+						fclose(node_file);
+					}
+					else
+						fprintf(stderr, "saver: Couldn't open \"%s\" for writing\n", n->last_name);
+				}
+				if(n->last_name[0] != '\0')
+					fprintf(f, "<xi:include href=\"%s\"/>\n", n->last_name);
+			}
+		}
+	}else
+	{
+		for(i = 0; i < V_NT_NUM_TYPES; i++)
+		{
+			for(node = e_ns_get_node_next(0, 0, i); node != NULL; node = e_ns_get_node_next(e_ns_get_node_id(node) + 1, 0, i))
+			{
+				if(node == me)
+					continue;
+				save_node(f, node, filter);
+			}
+		}
+	}
+	fprintf(f, "</vml>\n");
 	fclose(f);
 }
 
@@ -770,21 +1021,28 @@ static int find_param_single(int argc, char **argv, const char *option)
 
 int main(int argc, char **argv)
 {
-	uint32 i, seconds, s, interval;
+	uint32 i, seconds, s, interval, change_timeout, change_override;
 	const char *name, *pass, *address, *file, *tmp;
+	char timer[64], file_name[256];
 	FILE *f;
 	int	repeat = 0, filter = 0;
 
 	enough_init();
+	for(i = 0; i < V_NT_NUM_TYPES; i++)
+		e_ns_set_custom_func(0, i, node_update_func);
 	name = find_param(argc, argv, "-n", "saver");
 	pass = find_param(argc, argv, "-p", "pass");
 	address = find_param(argc, argv, "-a", "localhost");
-	file = find_param(argc, argv, "-f", "dump.vml");
+	file = find_param(argc, argv, "-f", "dump");
 	repeat = !find_param_single(argc, argv, "-1");
-	tmp = find_param(argc, argv, "-i", "10");
+	tmp = find_param(argc, argv, "-i", "2");
 	if(tmp != NULL)
 		interval = strtoul(tmp, NULL, 10);
 	filter = find_param_single(argc, argv, "-l");
+	if((tmp = find_param(argc, argv, "-c", "30")) != NULL)
+		change_timeout = strtoul(tmp, NULL, 10);
+	if((tmp = find_param(argc, argv, "-C", "300")) != NULL)
+		change_override = strtoul(tmp, NULL, 10);
 
 	for(i = 1; i < argc; i++)
 	{
@@ -797,22 +1055,27 @@ int main(int argc, char **argv)
 			printf("-p <pass>\n");
 			printf("-a <address>\n");
 			printf("-f <filename>\n");
-			printf("-i <save interval in seconds>\n");
+			printf("-l Filter out object nodes without links or tags.\n");
 			printf("-1 Save only once, then exit.\n");
-			printf("-l Filter out object nodes without links or tags\n");
+			printf("-i <save interval in seconds>\n");
+			printf("-c <n> In continuous mode, save un-changed nodes every <n> seconds.\n");
+			printf("-C <n> In cintinuous mode, save nodes every n seconds, even if changing.\n");
 			return EXIT_SUCCESS;
 		}
 	}
+
 	if(e_vc_connect(address, name, pass, NULL) == -1)
 	{
 		printf("Error: Invalid server address '%s'\n", address);
 		return EXIT_FAILURE;
 	}
+
 	printf("Connecting to %s\n", address);
 	do
 	{
 		verse_callback_update(100000);
 	} while(e_ns_get_node_avatar(0) == NULL);
+
 	printf("Connected, waiting %u seconds until save\n", interval);
 	while(1)
 	{
@@ -820,17 +1083,28 @@ int main(int argc, char **argv)
 		s = seconds;
 		while(seconds < s + interval/* && verse_session_get_size() == 0*/)
 		{
-			verse_callback_update(1000);
+			verse_callback_update(500000);
 			download_data();
 			verse_session_get_time(&seconds, NULL);
 		}
-		printf("Done waiting, beginning save\n");
-		if((f = fopen(file, "w")) != NULL)
-			save_data(f, filter);
-		printf("Save complete\n");
+		timestring_set(timer, sizeof timer);
+		if(repeat)
+			sprintf(file_name, "%s_%s.vml", file, timer);
+		else
+			sprintf(file_name, "%s", file);
+
+		if((!repeat || save_data_test(change_timeout, change_override)) && (f = fopen(file_name, "w")) != NULL)
+		{	
+			printf("Done waiting, beginning save\n");
+			if(repeat)
+				save_data(f, timer, filter, change_timeout, change_override);
+			else
+				save_data(f, NULL, filter, change_timeout, change_override);
+			printf("Save complete\n");
+		}
 		if(!repeat)
 			break;
-		printf("Waiting %u seconds until next save\n", interval);
+		printf("Waiting %u seconds ...\n", interval);
 	}
 	return EXIT_SUCCESS;
 }
