@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="latin1"?>
 
 <vml version="1.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+
 <node-object id="n5" name="tvr-light">
 	<transform>
-		<position>0.000000 0.971429 0.000000</position>
+		<position>0.000000 0.793650 0.952381</position>
 		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
 		<scale>1.000000 1.000000 1.000000</scale>
 	</transform>
@@ -21,6 +22,7 @@
 		<link node="n2" label="matsel" target="0"/>
 		<link node="n3" label="matsel" target="1"/>
 		<link node="n4" label="matsel" target="2"/>
+		<link node="n7" label="matsel" target="3"/>
 	</links>
 </node-object>
 
@@ -2590,7 +2592,6 @@
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
-			<p>0</p>
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
@@ -2607,7 +2608,6 @@
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
-			<p>0</p>
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
@@ -2618,6 +2618,8 @@
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
+			<p>1</p>
+			<p>1</p>
 			<p>3</p>
 			<p>3</p>
 			<p>3</p>
@@ -2662,7 +2664,7 @@
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
-			<p>0</p>
+			<p>1</p>
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
@@ -2991,6 +2993,39 @@
 		<fragment-color id="f3">
 			<color>0.888889 0.888889 1.000000</color>
 		</fragment-color>
+	</fragments>
+</node-material>
+
+<node-material id="n7" name="chrome">
+	<fragments>
+		<fragment-output id="f0">
+			<label>color</label>
+			<front>f1</front>
+		</fragment-output>
+		<fragment-blender id="f1">
+			<type>VN_M_BLEND_ADD</type>
+			<data_a>f2</data_a>
+			<data_b>f5</data_b>
+		</fragment-blender>
+		<fragment-blender id="f2">
+			<type>VN_M_BLEND_MULTIPLY</type>
+			<data_a>f3</data_a>
+			<data_b>f4</data_b>
+		</fragment-blender>
+		<fragment-color id="f3">
+			<color>0.694444 0.694444 0.787037</color>
+		</fragment-color>
+		<fragment-light id="f4">
+			<type>VN_M_LIGHT_DIRECT_AND_AMBIENT</type>
+			<normal_falloff>0.000000</normal_falloff>
+			<brdf>n4294967295</brdf>
+			<brdf_r></brdf_r>
+			<brdf_g></brdf_g>
+			<brdf_b></brdf_b>
+		</fragment-light>
+		<fragment-reflection id="f5">
+			<normal_falloff>0.000000</normal_falloff>
+		</fragment-reflection>
 	</fragments>
 </node-material>
 
