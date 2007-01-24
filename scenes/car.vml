@@ -2,16 +2,7 @@
 
 <vml version="1.0" xmlns:xi="http://www.w3.org/2001/XInclude">
 
-<node-object id="n6" name="tvr-light">
-	<transform>
-		<position>0.000000 0.793650 0.952381</position>
-		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
-		<scale>1.000000 1.000000 1.000000</scale>
-	</transform>
-	<light>1.371428 1.371428 1.371428</light>
-</node-object>
-
-<node-object id="n7" name="tvr">
+<node-object id="n6" name="tvr">
 	<transform>
 		<position>0.000000 0.000000 0.000000</position>
 		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
@@ -24,6 +15,15 @@
 		<link node="n4" label="matsel" target="2"/>
 		<link node="n5" label="matsel" target="3"/>
 	</links>
+</node-object>
+
+<node-object id="n7" name="tvr-light">
+	<transform>
+		<position>0.000000 0.793650 0.952381</position>
+		<rotation>0.000000 0.000000 0.000000 1.000000</rotation>
+		<scale>1.000000 1.000000 1.000000</scale>
+	</transform>
+	<light>1.371428 1.371428 1.371428</light>
 </node-object>
 
 <node-geometry id="n1" name="tvr-geo">
@@ -2300,7 +2300,6 @@
 			<p>0</p>
 			<p>0</p>
 			<p>0</p>
-			<p>2</p>
 			<p>0</p>
 			<p>0</p>
 			<p>0</p>
@@ -2403,6 +2402,7 @@
 			<p>0</p>
 			<p>0</p>
 			<p>0</p>
+			<p>0</p>
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
@@ -2590,7 +2590,6 @@
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
-			<p>0</p>
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
@@ -2607,9 +2606,9 @@
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
-			<p>0</p>
-			<p>0</p>
-			<p>0</p>
+			<p>1</p>
+			<p>1</p>
+			<p>1</p>
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
@@ -2620,12 +2619,10 @@
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
+			<p>1</p>
 			<p>3</p>
 			<p>3</p>
 			<p>3</p>
-			<p>0</p>
-			<p>0</p>
-			<p>0</p>
 			<p>3</p>
 			<p>3</p>
 			<p>3</p>
@@ -2660,8 +2657,10 @@
 			<p>3</p>
 			<p>3</p>
 			<p>3</p>
+			<p>3</p>
+			<p>3</p>
+			<p>3</p>
 			<p>1</p>
-			<p>0</p>
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
@@ -2680,6 +2679,7 @@
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
+			<p>0</p>
 			<p>1</p>
 			<p>1</p>
 			<p>1</p>
