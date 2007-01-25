@@ -174,7 +174,7 @@ static void node_update_func(ENode *node, ECustomDataCommand command)
 			verse_session_get_time(&n->last_update, NULL);
 			n->last_save = n->last_update;
 			n->last_name[0] = 0;
-			n->saved = TRUE;
+			n->saved = FALSE;
 			e_ns_set_custom_data(node, 0, n);
 		break;
 		case E_CDC_STRUCT :
@@ -222,11 +222,7 @@ static void save_object(FILE *f, ENode *o_node)
 	fprintf(f, "\t</transform>\n");
 	e_nso_get_light(o_node, tmp);
 	if(tmp[0] != 0 || tmp[1] != 0 || tmp[2] != 0)
-	{
-		fprintf(f, "\t<light>\n");
-		fprintf(f, "\t\t%f %f %f\n", tmp[0], tmp[1], tmp[2]);
-		fprintf(f, "\t</light>\n");
-	}
+		fprintf(f, "\t<light>%f %f %f</light>\n", tmp[0], tmp[1], tmp[2]);
 	if(e_nso_get_next_link(o_node, 0) != NULL)
 	{
 		fprintf(f, "\t<links>\n");
@@ -767,6 +763,7 @@ static void save_string(FILE *f, const char *p)
 static int node_filter_test(const ENode *node)
 {
 	double	light[3];
+	uint	tg;
 
 	if(node == NULL)
 		return 0;
@@ -774,8 +771,14 @@ static int node_filter_test(const ENode *node)
 		return 1;
 	if(e_nso_get_next_link((ENode *) node, 0) != NULL)
 		return 1;
-	if(e_ns_get_next_tag_group((ENode *) node, 0) != (uint16) ~0)
-		return 1;
+	/* If a tag group *not* named "avatar" is found, don't filter out the nodes. Avatars, though,
+	 * are very transient so they can often be skipped.
+	*/
+	for(tg = e_ns_get_next_tag_group(node, 0); tg != (uint16) ~0u; tg = e_ns_get_next_tag_group(node, tg + 1))
+	{
+		if(strcmp(e_ns_get_tag_group(node, tg), "avatar") != 0)
+			return 1;
+	}
 	e_nso_get_light((ENode *) node, light);
 	if(light[0] != 0.0 || light[1] != 0.0 || light[2] != 0.0)
 		return 1;
@@ -891,11 +894,12 @@ static boolean save_data_test(uint32 change_timeout, uint32 change_override)
 			if(node != me)
 			{
 				n = e_ns_get_custom_data(node, 0);
-/*				printf("%s: update %u ago, saved %u ago (limits are %u and %u)\n",
+				printf("%s: update %u ago, saved %u ago (limits are %u and %u), saved %s\n",
 				       e_ns_get_node_name(node),
 				       seconds - n->last_update, seconds - n->last_save,
-				       change_timeout, change_override);
-*/				if(n->saved != TRUE && (n->last_save + change_override < seconds || n->last_update + change_timeout < seconds))
+				       change_timeout, change_override,
+				       n->saved ? "yes" : "no");
+				if(n->saved != TRUE && (n->last_save + change_override < seconds || n->last_update + change_timeout < seconds))
 					return TRUE;
 			}
 		}
